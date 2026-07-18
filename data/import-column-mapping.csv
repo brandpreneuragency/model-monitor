@@ -1,0 +1,29 @@
+Source sheet,Source column,Target entity,Target field,Transformation,Conflict rule
+Master Models,Provider,access_provider or developer,name,Resolve using model family and access package,Never trust this column alone as developer
+Master Models,Package,plan,name,Normalize spacing/casing,User subscription seed overrides package naming
+Master Models,Model,model,name,Trim; resolve aliases,Canonical ID wins
+Master Models,Model ID,model/model_access,canonical_id or provider_model_id,Preserve exact value,Canonical roster identity has priority
+Master Models,Family,model,family,Trim,Prefer non-empty detailed source
+Master Models,Generation,model,generation,Stringify decimals,Prefer non-empty detailed source
+Master Models,Status,model,lifecycle_status,Map to lifecycle enum + raw label,Keep raw label in notes
+Master Models,Release Date,model,release_date,Convert Excel serial to ISO date,Latest verified source wins
+Master Models,Vision Support,model_capabilities,vision,Map Yes/No/unknown + details,Do not coerce unknown to false
+Master Models,Reasoning Support,model_capabilities,reasoning,Map support level + details,Preserve exact text
+Master Models,Parallel-Agent Support,model_capabilities,parallel_agents,Map boolean/details,Preserve exact text
+Master Models,Context Tokens,model,context_tokens,Integer,Null remains null
+Master Models,Max Output Tokens,model,max_output_tokens,Integer,Null remains null
+Master Models,Subscription USD/mo,subscription,regular_price,Do not import directly from model row,Use personal subscription seed or plan table
+Master Models,Input $/M,model_access_pricing,input_per_million,Decimal,Only when access endpoint is known
+Master Models,Cached Read $/M,model_access_pricing,cached_read_per_million,Decimal,"Null is unknown, not zero"
+Master Models,Output $/M,model_access_pricing,output_per_million,Decimal,Only when access endpoint is known
+Master Models,Capability Score,model_score,score_value,score_type=capability,Keep methodology version
+Master Models,Balanced Score,model_score,score_value,score_type=balanced,Keep methodology version
+Master Models,Value Score,model_score,score_value,score_type=value,Keep methodology version
+Master Models,Best Use,model,best_use,Trim,Latest verified non-empty wins
+Master Models,Avoid For,model,avoid_for,Trim,Latest verified non-empty wins
+Master Models,Verified On,source/model,verified_at,Convert Excel serial to ISO date,Preserve per-field provenance where possible
+Master Models,Needs Recheck,model,needs_recheck,Map Yes/No,Unknown defaults true during import
+Benchmarks,Model,model_benchmark_result,model_id,Resolve alias/canonical ID,Unmatched rows require review
+Benchmarks,Comparable Group,benchmark,comparable_group,Preserve exact text,Never compare across groups
+Provider Limits,Limits / Notes,subscription_limit_rule,notes,Manual parsing first; structured fields later,Raw source retained
+Model Router,Task,router_snapshot,task_name,Historical snapshot only,Do not use as live policy

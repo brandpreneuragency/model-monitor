@@ -1,0 +1,21 @@
+{
+  "name": "@model-monitor/database",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/schema.ts", "./client": "./src/client.ts" },
+  "scripts": {
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "generate": "drizzle-kit generate",
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed.ts",
+    "studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@model-monitor/schemas": "workspace:*",
+    "drizzle-orm": "^0.41.0",
+    "postgres": "^3.4.5",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": { "drizzle-kit": "^0.30.6" }
+}

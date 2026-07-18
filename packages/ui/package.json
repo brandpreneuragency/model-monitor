@@ -1,0 +1,7 @@
+{
+  "name": "@model-monitor/ui",
+  "private": true,
+  "type": "module",
+  "exports": { "./tokens.css": "./src/tokens.css" },
+  "scripts": { "lint": "eslint src", "typecheck": "tsc --noEmit" }
+}

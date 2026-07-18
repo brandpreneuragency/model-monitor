@@ -1,0 +1,1 @@
+export default function DeniedPage() { return <main className="auth"><section className="card"><h1>Access denied</h1><p className="muted">This Google account is not authorized to access Model Monitor.</p><a href="/sign-in">Return to sign in</a></section></main>; }

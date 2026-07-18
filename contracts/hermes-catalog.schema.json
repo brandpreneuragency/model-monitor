@@ -1,0 +1,305 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://model-monitor.local/schemas/hermes-catalog-v1.json",
+  "title": "Model Monitor Hermes Catalog",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "catalogRevision",
+    "models"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "catalogRevision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "canonicalId",
+          "name",
+          "developer",
+          "lifecycle",
+          "capabilities",
+          "technical",
+          "scores",
+          "access",
+          "verification"
+        ],
+        "properties": {
+          "canonicalId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "developer": {
+            "type": "string",
+            "minLength": 1
+          },
+          "family": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lifecycle": {
+            "type": "string"
+          },
+          "capabilities": {
+            "type": "object",
+            "required": [
+              "vision",
+              "reasoning",
+              "tools",
+              "parallelAgents"
+            ],
+            "properties": {
+              "vision": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "reasoning": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "tools": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "parallelAgents": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "computerUse": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "technical": {
+            "type": "object",
+            "properties": {
+              "contextTokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "maxOutputTokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "speedRating": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "verifiedTps": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "scores": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "value": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "rank": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1
+                },
+                "methodologyVersion": {
+                  "type": "string"
+                },
+                "confidence": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "value",
+                "methodologyVersion"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "access": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "provider",
+                "plan",
+                "available",
+                "accessMethod",
+                "apiCompatible",
+                "cliOnly",
+                "webOnly"
+              ],
+              "properties": {
+                "subscriptionId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "plan": {
+                  "type": "string"
+                },
+                "providerModelId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "availability": {
+                  "enum": [
+                    "confirmed",
+                    "unconfirmed",
+                    "unavailable",
+                    "removed"
+                  ]
+                },
+                "accessMethod": {
+                  "type": "string"
+                },
+                "apiCompatible": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "cliOnly": {
+                  "type": "boolean"
+                },
+                "webOnly": {
+                  "type": "boolean"
+                },
+                "limitations": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "usage": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "source": {
+                      "enum": [
+                        "mock",
+                        "manual",
+                        "estimated",
+                        "provider_reported"
+                      ]
+                    },
+                    "isMock": {
+                      "type": "boolean"
+                    },
+                    "usedPercent": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "capturedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "isMock",
+                    "capturedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "verification": {
+            "type": "object",
+            "required": [
+              "verifiedAt",
+              "needsRecheck"
+            ],
+            "properties": {
+              "verifiedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "needsRecheck": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

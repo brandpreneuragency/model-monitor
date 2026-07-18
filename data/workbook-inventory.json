@@ -1,0 +1,101 @@
+{
+  "sourceFile": "LLM_MASTER_v2.xlsm",
+  "sheetCount": 15,
+  "sheets": [
+    {
+      "name": "Master Models",
+      "range": "A1:BX35",
+      "role": "wide consolidated table; currently 31 populated model/access rows"
+    },
+    {
+      "name": "Google Model Data",
+      "range": "A1:T12",
+      "role": "8 Google canonical model records"
+    },
+    {
+      "name": "Benchmarks",
+      "range": "A1:M280",
+      "role": "276 benchmark evidence rows"
+    },
+    {
+      "name": "Provider Limits",
+      "range": "A1:V68",
+      "role": "provider and model pricing/limit evidence"
+    },
+    {
+      "name": "Methodology & Sources",
+      "range": "A1:G83",
+      "role": "methodology and source registry"
+    },
+    {
+      "name": "Model Router",
+      "range": "A1:R29",
+      "role": "current task recommendations and final rankings"
+    },
+    {
+      "name": "Expansion Scope",
+      "range": "A1:J56",
+      "role": "locked 51-model roster and lifecycle decisions"
+    },
+    {
+      "name": "Baseline Reference",
+      "range": "A1:F33",
+      "role": "29 pre-Google roster records"
+    },
+    {
+      "name": "Session 3 Handoff",
+      "range": "A1:F24",
+      "role": "research handoff; not production data"
+    },
+    {
+      "name": "Mistral & Nemotron Data",
+      "range": "A1:T13",
+      "role": "9 Mistral/NVIDIA canonical records"
+    },
+    {
+      "name": "Session 4 Handoff",
+      "range": "A1:F27",
+      "role": "research handoff; not production data"
+    },
+    {
+      "name": "Session 5 Model Data",
+      "range": "A1:V9",
+      "role": "5 emerging model records"
+    },
+    {
+      "name": "Session 5 Handoff",
+      "range": "A1:F26",
+      "role": "research handoff; not production data"
+    },
+    {
+      "name": "Session 6 Normalization",
+      "range": "A1:T280",
+      "role": "normalization evidence and factor weights"
+    },
+    {
+      "name": "Session 6 Handoff",
+      "range": "A1:G70",
+      "role": "QC handoff; not production data"
+    }
+  ],
+  "canonicalRosterCount": 51,
+  "masterModelsPopulatedRows": 31,
+  "masterColumnCount": 76,
+  "benchmarkEvidenceRows": 276,
+  "knownIssues": [
+    "The workbook states 51 canonical models, while Master Models currently has 31 populated rows.",
+    "Master Models mixes canonical models with duplicate access-provider rows.",
+    "Provider sometimes means model developer and sometimes access provider.",
+    "Subscription prices are repeated on model rows and must be moved to subscription records.",
+    "Some duplicate access rows have blank Model ID values.",
+    "The application must calculate counts from normalized records rather than workbook summary cells."
+  ],
+  "importPriority": [
+    "Expansion Scope and Baseline Reference for roster identity",
+    "Google Model Data, Mistral & Nemotron Data, and Session 5 Model Data for detailed canonical specifications",
+    "Master Models for scores, ranks, best-use text, pricing evidence, and populated technical fields",
+    "Benchmarks for raw evidence",
+    "Provider Limits for plan and pricing evidence",
+    "Model Router as a historical recommendation snapshot, not live routing logic"
+  ]
+}

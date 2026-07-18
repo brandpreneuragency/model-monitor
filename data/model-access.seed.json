@@ -1,0 +1,192 @@
+[
+  {
+    "subscriptionId": "sub-openai-chatgpt-plus",
+    "modelCanonicalId": "gpt-5.6-sol",
+    "availability": "confirmed",
+    "accessMethod": "oauth",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": false
+  },
+  {
+    "subscriptionId": "sub-openai-chatgpt-plus",
+    "modelCanonicalId": "gpt-5.6-terra",
+    "availability": "confirmed",
+    "accessMethod": "oauth",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": false
+  },
+  {
+    "subscriptionId": "sub-openai-chatgpt-plus",
+    "modelCanonicalId": "gpt-5.6-luna",
+    "availability": "confirmed",
+    "accessMethod": "oauth",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": false
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "modelCanonicalId": "z-ai/glm-5.2",
+    "availability": "confirmed",
+    "accessMethod": "provider_api",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": true
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "modelCanonicalId": "z-ai/glm-5.1",
+    "availability": "confirmed",
+    "accessMethod": "provider_api",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": true
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "modelCanonicalId": "moonshot/kimi-k2.7-code",
+    "availability": "confirmed",
+    "accessMethod": "provider_api",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": true
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "modelCanonicalId": "moonshot/kimi-k2.6",
+    "availability": "confirmed",
+    "accessMethod": "provider_api",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": true
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "modelCanonicalId": "xiaomi/mimo-v2.5",
+    "availability": "confirmed",
+    "accessMethod": "provider_api",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": true
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "modelCanonicalId": "xiaomi/mimo-v2.5-pro",
+    "availability": "confirmed",
+    "accessMethod": "provider_api",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": true
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "modelCanonicalId": "minimax/m3",
+    "availability": "confirmed",
+    "accessMethod": "provider_api",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": true
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "modelCanonicalId": "minimax/m2.7",
+    "availability": "confirmed",
+    "accessMethod": "provider_api",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": true
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "modelCanonicalId": "alibaba/qwen3.7-max",
+    "availability": "confirmed",
+    "accessMethod": "provider_api",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": true
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "modelCanonicalId": "alibaba/qwen3.7-plus",
+    "availability": "confirmed",
+    "accessMethod": "provider_api",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": true
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "modelCanonicalId": "deepseek/v4-pro",
+    "availability": "confirmed",
+    "accessMethod": "provider_api",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": true
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "modelCanonicalId": "deepseek/v4-flash",
+    "availability": "confirmed",
+    "accessMethod": "provider_api",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": false,
+    "apiCompatible": true
+  },
+  {
+    "subscriptionId": "sub-xai-supergrok",
+    "modelCanonicalId": "grok-4.5",
+    "availability": "confirmed",
+    "accessMethod": "consumer_app",
+    "includedInPlan": true,
+    "cliOnly": false,
+    "webOnly": true,
+    "apiCompatible": false
+  },
+  {
+    "subscriptionId": "sub-command-code-go",
+    "modelCanonicalId": "deepseek/v4-pro",
+    "availability": "confirmed",
+    "accessMethod": "cli",
+    "includedInPlan": true,
+    "cliOnly": true,
+    "webOnly": false,
+    "apiCompatible": false
+  },
+  {
+    "subscriptionId": "sub-command-code-go",
+    "modelCanonicalId": "xiaomi/mimo-v2.5-pro",
+    "availability": "confirmed",
+    "accessMethod": "cli",
+    "includedInPlan": true,
+    "cliOnly": true,
+    "webOnly": false,
+    "apiCompatible": false
+  },
+  {
+    "subscriptionId": "sub-command-code-go",
+    "modelCanonicalId": "minimax/m3",
+    "availability": "confirmed",
+    "accessMethod": "cli",
+    "includedInPlan": true,
+    "cliOnly": true,
+    "webOnly": false,
+    "apiCompatible": false
+  }
+]

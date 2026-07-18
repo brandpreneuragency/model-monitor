@@ -1,0 +1,962 @@
+openapi: 3.1.0
+info:
+  title: Model Monitor API
+  version: 1.1.0
+  description: Private model registry, subscription management, and Hermes catalog API.
+  x-contract-notes:
+    - v1.1 (2026-07-18): completed per docs/05_API_SPEC.md, docs/13_ACCEPTANCE_CRITERIA.md, and docs/17_CONTRACT_DISCREPANCIES.md (CD-08..CD-11, CD-15, CD-16).
+    - Hermes MVP surface is /hermes/catalog only (ADR-0004).
+servers:
+  - url: /api/v1
+security:
+  - sessionAuth: []
+tags:
+  - { name: system }
+  - { name: models }
+  - { name: subscriptions }
+  - { name: access }
+  - { name: benchmarks }
+  - { name: imports }
+  - { name: audit }
+  - { name: exports }
+  - { name: settings }
+  - { name: hermes }
+paths:
+  /health:
+    get:
+      tags: [system]
+      security: []
+      operationId: getHealth
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, database, time]
+                properties:
+                  status: { type: string, const: ok }
+                  database: { type: string, const: ok }
+                  time: { type: string, format: date-time }
+  /models:
+    get:
+      tags: [models]
+      operationId: listModels
+      parameters:
+        - { name: search, in: query, schema: { type: string }, description: Name, canonical ID, alias, developer, family, or access provider. }
+        - { name: developer, in: query, schema: { type: string } }
+        - { name: family, in: query, schema: { type: string } }
+        - { name: lifecycle, in: query, schema: { type: string, enum: [current, ga, preview, beta, legacy, deprecated, retired, unavailable, unknown] } }
+        - { name: archived, in: query, schema: { type: boolean, default: false } }
+        - { name: accessible, in: query, schema: { type: boolean }, description: Matches the Hermes availability rule (ADR-0001). }
+        - { name: subscription, in: query, schema: { type: string } }
+        - { name: accessProvider, in: query, schema: { type: string } }
+        - { name: vision, in: query, schema: { type: string, enum: ['true', 'false', 'unknown'] } }
+        - { name: reasoning, in: query, schema: { type: string, enum: ['true', 'false', 'unknown'] } }
+        - { name: toolSupport, in: query, schema: { type: string, enum: ['true', 'false', 'unknown'] } }
+        - { name: needsRecheck, in: query, schema: { type: boolean } }
+        - { name: verifiedBefore, in: query, schema: { type: string, format: date } }
+        - { name: minimumCapabilityScore, in: query, schema: { type: number } }
+        - { name: minimumContextTokens, in: query, schema: { type: integer, minimum: 0 } }
+        - { name: sort, in: query, schema: { type: string }, description: 'Comma-separated; prefix `-` for descending. Example: `-scores.capability,name`.' }
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Model collection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelCollection'
+        '400': { $ref: '#/components/responses/BadRequest' }
+    post:
+      tags: [models]
+      operationId: createModel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModelWrite' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Model' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /models/merge:
+    post:
+      tags: [models]
+      operationId: mergeModels
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sourceModelId, targetModelId]
+              properties:
+                sourceModelId: { type: string }
+                targetModelId: { type: string }
+                resolutions: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Merge result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [targetModelId, transferred, auditEventId]
+                properties:
+                  targetModelId: { type: string }
+                  transferred: { type: object, additionalProperties: { type: integer } }
+                  auditEventId: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /models/{modelId}:
+    parameters:
+      - { name: modelId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [models]
+      operationId: getModel
+      responses:
+        '200':
+          description: Model
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Model' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [models]
+      operationId: updateModel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModelWrite' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Model' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [models]
+      operationId: archiveModel
+      description: Archives the model. Permanent deletion only via the danger flow (not part of this endpoint).
+      responses:
+        '204': { description: Archived }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /models/{modelId}/restore:
+    post:
+      tags: [models]
+      operationId: restoreModel
+      parameters:
+        - { name: modelId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Model' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /models/{modelId}/history:
+    get:
+      tags: [models]
+      operationId: getModelHistory
+      parameters:
+        - { name: modelId, in: path, required: true, schema: { type: string } }
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Audit events for this model, newest first
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditEventCollection' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /models/{modelId}/scores:
+    get:
+      tags: [models]
+      operationId: listModelScores
+      parameters:
+        - { name: modelId, in: path, required: true, schema: { type: string } }
+        - { name: scoreType, in: query, schema: { type: string } }
+        - { name: includeHistory, in: query, schema: { type: boolean, default: false } }
+      responses:
+        '200':
+          description: Current scores (and optionally history) for the model
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ModelScore' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [models]
+      operationId: createModelScore
+      description: Appends a score record. Manual overrides require `overrideReason`; history is never updated in place.
+      parameters:
+        - { name: modelId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModelScoreWrite' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModelScore' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /subscriptions:
+    get:
+      tags: [subscriptions]
+      operationId: listSubscriptions
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [active, paused, cancelled, expired, trial, archived] } }
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Subscriptions
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SubscriptionCollection' }
+    post:
+      tags: [subscriptions]
+      operationId: createSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubscriptionWrite' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /subscriptions/{subscriptionId}:
+    parameters:
+      - { name: subscriptionId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [subscriptions]
+      operationId: getSubscription
+      responses:
+        '200':
+          description: Subscription
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [subscriptions]
+      operationId: updateSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubscriptionWrite' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [subscriptions]
+      operationId: archiveSubscription
+      description: Archives the subscription (sets status=archived and archived_at).
+      responses:
+        '204': { description: Archived }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /subscriptions/{subscriptionId}/restore:
+    post:
+      tags: [subscriptions]
+      operationId: restoreSubscription
+      parameters:
+        - { name: subscriptionId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /model-access:
+    get:
+      tags: [access]
+      operationId: listModelAccess
+      parameters:
+        - { name: modelId, in: query, schema: { type: string } }
+        - { name: planId, in: query, schema: { type: string } }
+        - { name: availability, in: query, schema: { type: string, enum: [confirmed, unconfirmed, unavailable, removed] } }
+        - { name: archived, in: query, schema: { type: boolean, default: false } }
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Access records
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModelAccessCollection' }
+    post:
+      tags: [access]
+      operationId: createModelAccess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModelAccessWrite' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModelAccess' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /model-access/{accessId}:
+    parameters:
+      - { name: accessId, in: path, required: true, schema: { type: string } }
+    patch:
+      tags: [access]
+      operationId: updateModelAccess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModelAccessWrite' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModelAccess' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [access]
+      operationId: archiveModelAccess
+      responses:
+        '204': { description: Archived }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /access-matrix:
+    get:
+      tags: [access]
+      operationId: getAccessMatrix
+      parameters:
+        - { name: developer, in: query, schema: { type: string } }
+        - { name: planId, in: query, schema: { type: string } }
+        - { name: availability, in: query, schema: { type: string, enum: [confirmed, unconfirmed, unavailable, removed] } }
+      responses:
+        '200':
+          description: Matrix of canonical models x active subscriptions/plans
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [models, subscriptions, cells, meta]
+                properties:
+                  models: { type: array, items: { type: object, additionalProperties: true } }
+                  subscriptions: { type: array, items: { type: object, additionalProperties: true } }
+                  cells: { type: array, items: { type: object, additionalProperties: true } }
+                  meta: { $ref: '#/components/schemas/CollectionMeta' }
+  /benchmarks:
+    get:
+      tags: [benchmarks]
+      operationId: listBenchmarks
+      parameters:
+        - { name: category, in: query, schema: { type: string } }
+        - { name: search, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Benchmark definitions
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BenchmarkCollection' }
+  /benchmark-results:
+    post:
+      tags: [benchmarks]
+      operationId: createBenchmarkResult
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BenchmarkResultWrite' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BenchmarkResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /benchmark-results/{resultId}:
+    patch:
+      tags: [benchmarks]
+      operationId: updateBenchmarkResult
+      parameters:
+        - { name: resultId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BenchmarkResultWrite' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BenchmarkResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /imports/preview:
+    post:
+      tags: [imports]
+      operationId: previewImport
+      description: Uploads an XLSX/XLSM workbook and starts read-only preview generation. Macros are never executed and formulas are never evaluated.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                idempotencyKey: { type: string }
+      responses:
+        '202':
+          description: Preview accepted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportJob' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /imports/{importId}:
+    get:
+      tags: [imports]
+      operationId: getImport
+      parameters:
+        - { name: importId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Import
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportJob' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /imports/{importId}/resolve:
+    post:
+      tags: [imports]
+      operationId: resolveImportConflicts
+      parameters:
+        - { name: importId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resolutions]
+              properties:
+                resolutions:
+                  type: array
+                  items:
+                    type: object
+                    required: [conflictId, resolution]
+                    properties:
+                      conflictId: { type: string }
+                      resolution: { type: string, enum: [keep_existing, use_imported, merge, create_separate_access_endpoint, ignore_row, defer] }
+                      resolutionPayload: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Resolutions stored
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportJob' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /imports/{importId}/commit:
+    post:
+      tags: [imports]
+      operationId: commitImport
+      description: Applies the import in a single transaction. Replay with the same Idempotency-Key returns the original result without re-applying changes.
+      parameters:
+        - { name: importId, in: path, required: true, schema: { type: string } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Committed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportJob' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /imports/{importId}/cancel:
+    post:
+      tags: [imports]
+      operationId: cancelImport
+      parameters:
+        - { name: importId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Cancelled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportJob' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /audit-events:
+    get:
+      tags: [audit]
+      operationId: listAuditEvents
+      parameters:
+        - { name: entityType, in: query, schema: { type: string } }
+        - { name: entityId, in: query, schema: { type: string } }
+        - { name: action, in: query, schema: { type: string, enum: [create, update, archive, restore, merge, import, export, token_create, token_revoke, settings_change, delete] } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Audit events
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditEventCollection' }
+  /exports/models.json:
+    get:
+      tags: [exports]
+      operationId: exportModelsJson
+      responses:
+        '200':
+          description: Model catalog as JSON
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /exports/models.csv:
+    get:
+      tags: [exports]
+      operationId: exportModelsCsv
+      description: Formula-like values are neutralized before export.
+      responses:
+        '200':
+          description: Model catalog as CSV
+          content:
+            text/csv:
+              schema: { type: string }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /exports/models.xlsx:
+    get:
+      tags: [exports]
+      operationId: exportModelsXlsx
+      description: Normalized workbook export. Formula-like values are neutralized before export.
+      responses:
+        '200':
+          description: Model catalog as XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /exports/hermes.json:
+    get:
+      tags: [exports]
+      operationId: exportHermesJson
+      description: Hermes catalog export; validates against contracts/hermes-catalog.schema.json.
+      responses:
+        '200':
+          description: Hermes catalog as JSON
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /saved-views:
+    get:
+      tags: [settings]
+      operationId: listSavedViews
+      parameters:
+        - { name: entity, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: Saved table views
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SavedView' }
+    post:
+      tags: [settings]
+      operationId: createSavedView
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SavedViewWrite' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SavedView' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /saved-views/{viewId}:
+    delete:
+      tags: [settings]
+      operationId: deleteSavedView
+      parameters:
+        - { name: viewId, in: path, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Deleted }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /hermes/catalog:
+    get:
+      tags: [hermes]
+      operationId: getHermesCatalog
+      security:
+        - bearerAuth: [catalog:read]
+      responses:
+        '200':
+          description: Hermes catalog. Must validate against contracts/hermes-catalog.schema.json.
+          headers:
+            ETag: { schema: { type: string }, description: '"mm-catalog-<revision>" (ADR-0002)' }
+            Last-Modified: { schema: { type: string } }
+            Cache-Control: { schema: { type: string }, description: 'private, max-age=60' }
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Must validate against contracts/hermes-catalog.schema.json.
+        '304': { description: Not modified }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+components:
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: authjs.session-token
+      description: Auth.js session cookie. In production the cookie is `__Secure-authjs.session-token`.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Hermes API token (`mm_<prefix>_<secret>`). Only scope `catalog:read` exists in MVP.
+  responses:
+    BadRequest:
+      description: Validation error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Missing, invalid, expired, or revoked credentials
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Authenticated but insufficient scope
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Uniqueness, idempotency, or state conflict
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, requestId]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            requestId: { type: string }
+            fieldErrors: { type: object, additionalProperties: { type: array, items: { type: string } } }
+    CollectionMeta:
+      type: object
+      required: [requestId]
+      properties:
+        requestId: { type: string }
+    Page:
+      type: object
+      required: [hasMore]
+      properties:
+        nextCursor: { type: [string, 'null'] }
+        hasMore: { type: boolean }
+    Model:
+      allOf:
+        - { $ref: '#/components/schemas/ModelWrite' }
+        - type: object
+          required: [id, slug, status, createdAt, updatedAt]
+          properties:
+            id: { type: string }
+            slug: { type: string }
+            developerName: { type: string }
+            lifecycleRaw: { type: [string, 'null'] }
+            releaseDate: { type: [string, 'null'], format: date }
+            knowledgeCutoff: { type: [string, 'null'] }
+            modelType: { type: [string, 'null'] }
+            codingSpecialization: { type: [string, 'null'] }
+            speedRating: { type: [string, 'null'] }
+            verifiedTps: { type: [number, 'null'] }
+            verifiedAt: { type: [string, 'null'], format: date-time }
+            mergedIntoModelId: { type: [string, 'null'] }
+            status: { type: string, enum: [active, archived] }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+    ModelWrite:
+      type: object
+      required: [canonicalId, name, developerId]
+      properties:
+        canonicalId: { type: string }
+        name: { type: string }
+        developerId: { type: string }
+        family: { type: [string, 'null'] }
+        generation: { type: [string, 'null'] }
+        lifecycle: { type: string, enum: [current, ga, preview, beta, legacy, deprecated, retired, unavailable, unknown] }
+        contextTokens: { type: [integer, 'null'], minimum: 0 }
+        maxOutputTokens: { type: [integer, 'null'], minimum: 0 }
+        bestUse: { type: [string, 'null'] }
+        avoidFor: { type: [string, 'null'] }
+        needsRecheck: { type: boolean }
+    ModelCollection:
+      type: object
+      required: [data, page, meta]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Model' } }
+        page: { $ref: '#/components/schemas/Page' }
+        meta: { $ref: '#/components/schemas/CollectionMeta' }
+    ModelScore:
+      type: object
+      required: [id, modelId, scoreType, methodologyName, methodologyVersion, isManualOverride, calculatedAt]
+      properties:
+        id: { type: string }
+        modelId: { type: string }
+        scoreType: { type: string }
+        scoreValue: { type: [number, 'null'], description: 'Null is unknown; never a fabricated zero.' }
+        rankValue: { type: [integer, 'null'] }
+        eligibleCount: { type: [integer, 'null'] }
+        confidence: { type: [number, 'null'] }
+        methodologyName: { type: string }
+        methodologyVersion: { type: string }
+        isManualOverride: { type: boolean }
+        overrideReason: { type: [string, 'null'] }
+        calculatedAt: { type: string, format: date-time }
+    ModelScoreWrite:
+      type: object
+      required: [scoreType, methodologyId, calculatedAt]
+      properties:
+        scoreType: { type: string }
+        methodologyId: { type: string }
+        scoreValue: { type: [number, 'null'] }
+        rankValue: { type: [integer, 'null'] }
+        eligibleCount: { type: [integer, 'null'] }
+        confidence: { type: [number, 'null'] }
+        isManualOverride: { type: boolean, default: false }
+        overrideReason: { type: [string, 'null'], description: 'Required when isManualOverride is true.' }
+        calculatedAt: { type: string, format: date-time }
+    Subscription:
+      allOf:
+        - { $ref: '#/components/schemas/SubscriptionWrite' }
+        - type: object
+          required: [id, createdAt, updatedAt]
+          properties:
+            id: { type: string }
+            providerName: { type: string }
+            planName: { type: string }
+            archivedAt: { type: [string, 'null'], format: date-time }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+    SubscriptionWrite:
+      type: object
+      required: [planId, accountLabel, status]
+      properties:
+        planId: { type: string }
+        accountLabel: { type: string }
+        status: { type: string, enum: [active, paused, cancelled, expired, trial, archived] }
+        actualPrice: { type: [number, 'null'] }
+        currency: { type: [string, 'null'], minLength: 3, maxLength: 3 }
+        billingInterval: { type: [string, 'null'] }
+        nextBillingDate: { type: [string, 'null'], format: date }
+        autoRenews: { type: [boolean, 'null'] }
+        usageTrackingMode: { type: string, enum: [manual, mock, estimated, provider_reported, hybrid] }
+        usageCheckUrl: { type: [string, 'null'] }
+        usageCheckInstructions: { type: [string, 'null'] }
+        notes: { type: [string, 'null'] }
+    SubscriptionCollection:
+      type: object
+      required: [data, page, meta]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Subscription' } }
+        page: { $ref: '#/components/schemas/Page' }
+        meta: { $ref: '#/components/schemas/CollectionMeta' }
+    ModelAccess:
+      allOf:
+        - { $ref: '#/components/schemas/ModelAccessWrite' }
+        - type: object
+          required: [id, status]
+          properties:
+            id: { type: string }
+            status: { type: string, enum: [active, archived] }
+    ModelAccessWrite:
+      type: object
+      required: [modelId, planId, availability, accessMethod]
+      properties:
+        modelId: { type: string }
+        planId: { type: string }
+        providerModelId: { type: [string, 'null'] }
+        availability: { type: string, enum: [confirmed, unconfirmed, unavailable, removed] }
+        accessMethod: { type: string, enum: [oauth, provider_api, direct_api, cli, consumer_app, web, self_hosted, other] }
+        authenticationType: { type: string, enum: [oauth_subscription, api_key, consumer_subscription, cli_session, none, other] }
+        includedInPlan: { type: [boolean, 'null'] }
+        apiCompatible: { type: [boolean, 'null'] }
+        cliOnly: { type: boolean, default: false }
+        webOnly: { type: boolean, default: false }
+        limitations: { type: [string, 'null'] }
+        verifiedAt: { type: [string, 'null'], format: date-time }
+    ModelAccessCollection:
+      type: object
+      required: [data, page, meta]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/ModelAccess' } }
+        page: { $ref: '#/components/schemas/Page' }
+        meta: { $ref: '#/components/schemas/CollectionMeta' }
+    Benchmark:
+      type: object
+      required: [id, name, category]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        category: { type: string }
+        version: { type: [string, 'null'] }
+        comparableGroup: { type: [string, 'null'] }
+        scoreUnit: { type: [string, 'null'] }
+        higherIsBetter: { type: [boolean, 'null'] }
+        description: { type: [string, 'null'] }
+    BenchmarkCollection:
+      type: object
+      required: [data, page, meta]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Benchmark' } }
+        page: { $ref: '#/components/schemas/Page' }
+        meta: { $ref: '#/components/schemas/CollectionMeta' }
+    BenchmarkResult:
+      allOf:
+        - { $ref: '#/components/schemas/BenchmarkResultWrite' }
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string }
+    BenchmarkResultWrite:
+      type: object
+      required: [modelId, benchmarkId]
+      properties:
+        modelId: { type: string }
+        benchmarkId: { type: string }
+        setting: { type: [string, 'null'] }
+        harness: { type: [string, 'null'] }
+        score: { type: [number, 'null'] }
+        scoreText: { type: [string, 'null'] }
+        resultDate: { type: [string, 'null'], format: date }
+        confidence: { type: [number, 'null'] }
+        sourceType: { type: [string, 'null'], enum: [official_docs, official_model_card, official_pricing, benchmark_report, vendor_blog, third_party, workbook, manual, other, null] }
+        sourceUrl: { type: [string, 'null'] }
+        notes: { type: [string, 'null'] }
+        verifiedAt: { type: [string, 'null'], format: date-time }
+    ImportJob:
+      type: object
+      required: [id, filename, sha256, parserVersion, status, createdAt]
+      properties:
+        id: { type: string }
+        filename: { type: string }
+        sha256: { type: string }
+        parserVersion: { type: string }
+        status: { type: string, enum: [uploaded, parsing, preview_ready, needs_resolution, committing, committed, failed, cancelled] }
+        sheetSummary: { type: [object, 'null'], additionalProperties: true }
+        previewSummary: { type: [object, 'null'], additionalProperties: true }
+        commitSummary: { type: [object, 'null'], additionalProperties: true }
+        errorSummary: { type: [object, 'null'], additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+        committedAt: { type: [string, 'null'], format: date-time }
+    AuditEvent:
+      type: object
+      required: [id, entityType, action, createdAt]
+      properties:
+        id: { type: string }
+        actorUserId: { type: [string, 'null'] }
+        entityType: { type: string }
+        entityId: { type: [string, 'null'] }
+        action: { type: string, enum: [create, update, archive, restore, merge, import, export, token_create, token_revoke, settings_change, delete] }
+        beforeData: { type: [object, 'null'], additionalProperties: true }
+        afterData: { type: [object, 'null'], additionalProperties: true }
+        metadata: { type: [object, 'null'], additionalProperties: true }
+        requestId: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+    AuditEventCollection:
+      type: object
+      required: [data, page, meta]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/AuditEvent' } }
+        page: { $ref: '#/components/schemas/Page' }
+        meta: { $ref: '#/components/schemas/CollectionMeta' }
+    SavedView:
+      allOf:
+        - { $ref: '#/components/schemas/SavedViewWrite' }
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string }
+    SavedViewWrite:
+      type: object
+      required: [entity, name, definition]
+      properties:
+        entity: { type: string, description: 'Table identifier, e.g. `models`.' }
+        name: { type: string }
+        definition: { type: object, additionalProperties: true, description: 'Columns, filters, sort, density.' }

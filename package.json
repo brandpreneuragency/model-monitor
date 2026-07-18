@@ -1,0 +1,39 @@
+{
+  "name": "model-monitor",
+  "private": true,
+  "packageManager": "pnpm@10.31.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "pnpm --filter @model-monitor/web dev",
+    "build": "pnpm --filter @model-monitor/web build",
+    "start": "pnpm --filter @model-monitor/web start",
+    "lint": "pnpm --recursive lint",
+    "typecheck": "pnpm --recursive typecheck",
+    "test": "pnpm test:unit && pnpm test:integration",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:e2e": "playwright test",
+    "db:generate": "pnpm --filter @model-monitor/database generate",
+    "db:migrate": "pnpm --filter @model-monitor/database migrate",
+    "db:seed": "pnpm --filter @model-monitor/database seed",
+    "db:studio": "pnpm --filter @model-monitor/database studio",
+    "import:fixture": "pnpm --filter @model-monitor/database seed",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test",
+    "contract:validate": "tsx scripts/validate-contracts.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2",
+    "@types/node": "^22.15.21",
+    "@typescript-eslint/eslint-plugin": "^8.32.0",
+    "@typescript-eslint/parser": "^8.32.0",
+    "ajv": "^8.17.1",
+    "drizzle-kit": "^0.30.6",
+    "eslint": "^9.28.0",
+    "eslint-config-next": "^15.3.2",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.1",
+    "yaml": "^2.7.1"
+  }
+}

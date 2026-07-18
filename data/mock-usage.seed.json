@@ -1,0 +1,38 @@
+[
+  {
+    "subscriptionId": "sub-openai-chatgpt-plus",
+    "isMock": true,
+    "capturedAt": "2026-07-18T03:00:00+03:00",
+    "periodLabel": "Rolling window",
+    "usedPercent": 42,
+    "remainingPercent": 58,
+    "status": "healthy"
+  },
+  {
+    "subscriptionId": "sub-opencode-go",
+    "isMock": true,
+    "capturedAt": "2026-07-18T03:00:00+03:00",
+    "periodLabel": "Monthly allowance",
+    "usedPercent": 63,
+    "remainingPercent": 37,
+    "status": "watch"
+  },
+  {
+    "subscriptionId": "sub-xai-supergrok",
+    "isMock": true,
+    "capturedAt": "2026-07-18T03:00:00+03:00",
+    "periodLabel": "Current allowance",
+    "usedPercent": 27,
+    "remainingPercent": 73,
+    "status": "healthy"
+  },
+  {
+    "subscriptionId": "sub-command-code-go",
+    "isMock": true,
+    "capturedAt": "2026-07-18T03:00:00+03:00",
+    "periodLabel": "Included credits",
+    "usedPercent": 51,
+    "remainingPercent": 49,
+    "status": "healthy"
+  }
+]

@@ -1,0 +1,1 @@
+export const formatIstanbulDate = (value: Date | string | null): string => value ? new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: 'Europe/Istanbul' }).format(new Date(value)) : 'Unknown';

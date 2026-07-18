@@ -1,0 +1,8 @@
+{
+  "name": "@model-monitor/schemas",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "lint": "eslint src", "typecheck": "tsc --noEmit" },
+  "dependencies": { "zod": "^3.24.4" }
+}
