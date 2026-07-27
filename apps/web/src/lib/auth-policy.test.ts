@@ -151,13 +151,13 @@ describe("safeCallbackUrl", () => {
   });
 
   it("rejects protocol-relative, backslashes, controls, and encoded separators", () => {
-    expect(safeCallbackUrl("//evil.example")).toBe("/dashboard");
-    expect(safeCallbackUrl("/\\evil")).toBe("/dashboard");
-    expect(safeCallbackUrl("/models\n/x")).toBe("/dashboard");
-    expect(safeCallbackUrl("/%2f%2fevil.example")).toBe("/dashboard");
-    expect(safeCallbackUrl("%252f%252fevil.example")).toBe("/dashboard");
-    expect(safeCallbackUrl("https://evil.example")).toBe("/dashboard");
-    expect(safeCallbackUrl("/login?next=/models")).toBe("/dashboard");
+    expect(safeCallbackUrl("//evil.example")).toBe("/models");
+    expect(safeCallbackUrl("/\\evil")).toBe("/models");
+    expect(safeCallbackUrl("/models\n/x")).toBe("/models");
+    expect(safeCallbackUrl("/%2f%2fevil.example")).toBe("/models");
+    expect(safeCallbackUrl("%252f%252fevil.example")).toBe("/models");
+    expect(safeCallbackUrl("https://evil.example")).toBe("/models");
+    expect(safeCallbackUrl("/login?next=/models")).toBe("/models");
   });
 });
 

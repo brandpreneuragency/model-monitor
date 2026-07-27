@@ -2,7 +2,14 @@
 
 ## Deferred drops
 
-(none yet — deploy phase will execute items listed here)
+Tables retained during redesign build; drop in `deploy-finalize`:
+
+- `api_tokens` (and related token rows) — API-token admin surface removed in legacy-removal
+- `model_scores` — scoring UI/API rewritten later; table stays until deploy
+- `usage_snapshots` — mock usage / dashboard KPIs removed from product surface
+- `subscriptions` / `subscription_limit_rules` — product concept retired; APIs/UI removed in legacy-removal (additive-only until deploy)
+
+(none of the above are dropped by migrations until deploy-finalize)
 
 ## Deferred issues
 
@@ -129,3 +136,42 @@ git -C "$REPO_DIR" checkout -- AGENTS.md progress.md
 ```
 git -C "$REPO_DIR" checkout -- AGENTS.md progress.md
 ```
+
+### legacy-removal (2026-07-27T22:04Z) — RESULT=PASS
+
+#### Built
+- Deleted redesign-removed packages, app routes, API routes, and components (Hermes catalog,
+  excel-import, access-matrix, benchmarks, audit, imports UI, dashboard, subscriptions,
+  api-tokens, audit-events APIs, admin components).
+- Deleted import-pipeline + broken openapi/catalog/import tests; hermes ADRs 0001-0004 + ADR-003.
+- Also removed orphaned `api/v1/imports` (only depended on deleted excel-import/import-pipeline)
+  and e2e `subscriptions.spec.ts`.
+- Cleaned `apps/web/package.json` (hermes-contract, excel-import, exceljs); `pnpm install` OK.
+- Home redirects to `/models`; shell nav trimmed; settings stubbed; export XLSX without exceljs.
+- admin-routes tests stripped of token/audit cases; surviving saved-views + verification kept.
+- Deferred drops listed: api_tokens, model_scores, usage_snapshots (plus subscriptions tables).
+
+#### Verified
+- `pnpm install` exit 0
+- `pnpm lint` exit 0
+- `pnpm typecheck` exit 0 (after clearing stale `.next` route types)
+- `pnpm test:unit` exit 0 — web 8 files / 52 tests; monorepo all packages green
+- Gate path absences: hermes-contract, excel-import, access-matrix, benchmarks, audit,
+  api/v1/hermes, api/v1/api-tokens
+- Evidence: `$RUN_DIR/legacy-removal.txt` with `RESULT=PASS`
+
+#### Deferred
+- DB table drops (api_tokens, model_scores, usage_snapshots, subscriptions*) to deploy-finalize
+- Full settings UI to settings-responsive phase
+- Primary nav Overview/Rankings/Providers to shell + later page phases
+- CSV import replacement to csv-importer / import-export phases
+
+#### Unsure
+- None blocking. export-pipeline now uses a minimal OOXML writer instead of exceljs;
+  import-export phase may revisit XLSX fidelity.
+
+#### Rollback (this phase only)
+```
+git -C "$REPO_DIR" checkout -- . && PATH="$HOME/.local/bin:$PATH" pnpm install
+```
+

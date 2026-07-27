@@ -1,28 +1,11 @@
 "use client";
 
-import {
-  LayoutDashboard,
-  Boxes,
-  CreditCard,
-  Grid3x3,
-  BarChart3,
-  Upload,
-  ScrollText,
-  Settings,
-  Menu,
-  X,
-} from "lucide-react";
+import { Boxes, Menu, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/models", label: "Models", icon: Boxes },
-  { href: "/subscriptions", label: "Subscriptions", icon: CreditCard },
-  { href: "/access-matrix", label: "Access Matrix", icon: Grid3x3 },
-  { href: "/benchmarks", label: "Benchmarks", icon: BarChart3 },
-  { href: "/imports", label: "Imports", icon: Upload },
-  { href: "/audit", label: "Audit Log", icon: ScrollText },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -40,7 +23,11 @@ function NavLinks({
           key={item.href}
           href={item.href}
           onClick={onNavigate}
-          data-testid={linkTestIdPrefix ? `${linkTestIdPrefix}-${item.label.toLowerCase().replace(/\s+/g, "-")}` : undefined}
+          data-testid={
+            linkTestIdPrefix
+              ? `${linkTestIdPrefix}-${item.label.toLowerCase().replace(/\s+/g, "-")}`
+              : undefined
+          }
           className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         >
           <item.icon className="h-4 w-4" aria-hidden />

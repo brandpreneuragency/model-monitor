@@ -79,7 +79,7 @@ export function isPublicPath(pathname: string): boolean {
  * Only allow same-origin relative callback paths.
  * Rejects protocol-relative, backslashes, controls, encoded separators, and auth loops.
  */
-export function safeCallbackUrl(raw: string | null | undefined, fallback = "/dashboard"): string {
+export function safeCallbackUrl(raw: string | null | undefined, fallback = "/models"): string {
   if (!raw) return fallback;
   if (typeof raw !== "string") return fallback;
 

@@ -70,10 +70,10 @@ describe("middleware auth boundaries", () => {
     getToken.mockResolvedValue(null);
 
     try {
-      const res = await middleware(makeRequest("/dashboard"));
+      const res = await middleware(makeRequest("/models"));
       expect(res.status).toBe(307);
       expect(res.headers.get("location")).toBe(
-        "https://models.brandpreneur.net/login?callbackUrl=%2Fdashboard",
+        "https://models.brandpreneur.net/login?callbackUrl=%2Fmodels",
       );
     } finally {
       if (previousAuthUrl === undefined) delete process.env.AUTH_URL;
@@ -87,7 +87,7 @@ describe("middleware auth boundaries", () => {
     getToken.mockResolvedValue(null);
 
     try {
-      await middleware(makeRequest("/dashboard"));
+      await middleware(makeRequest("/models"));
       expect(getToken).toHaveBeenCalledWith(
         expect.objectContaining({ secureCookie: true }),
       );
