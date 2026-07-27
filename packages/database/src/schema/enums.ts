@@ -115,3 +115,26 @@ export const usageSource = pgEnum("usage_source", [
   "estimated",
   "provider_reported",
 ]);
+
+export const personalConfidence = pgEnum("personal_confidence", [
+  "low",
+  "medium",
+  "high",
+]);
+
+export const tagCategory = pgEnum("tag_category", [
+  "status",
+  "capability",
+  "access",
+  "usage",
+  "cost",
+  "preference",
+]);
+
+export const viewMode = pgEnum("view_mode", ["table", "cards", "compact"]);
+
+export const viewDensity = pgEnum("view_density", [
+  "comfortable",
+  "standard",
+  "compact",
+]);

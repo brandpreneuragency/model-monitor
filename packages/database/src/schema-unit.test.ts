@@ -39,11 +39,22 @@ describe("SQL migrations", () => {
       "0004_provenance_usage_tokens_audit.sql",
       "0005_idempotency_keys.sql",
       "0006_seed_ownership.sql",
+      "0007_rankings_tags_views.sql",
     ]);
   });
 
   it("exports idempotency_keys table", () => {
     expect(schema.idempotencyKeys).toBeDefined();
+  });
+
+  it("exports rankings / tags / saved_views tables", () => {
+    expect(schema.skills).toBeDefined();
+    expect(schema.modelSkillRatings).toBeDefined();
+    expect(schema.rankingProfiles).toBeDefined();
+    expect(schema.rankingProfileSkills).toBeDefined();
+    expect(schema.tags).toBeDefined();
+    expect(schema.modelTags).toBeDefined();
+    expect(schema.savedViews).toBeDefined();
   });
 });
 
