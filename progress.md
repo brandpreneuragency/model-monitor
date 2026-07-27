@@ -424,3 +424,32 @@ git -C "$REPO_DIR" checkout -- packages/
 
 Evidence: `$RUN_DIR/schema-plans-models.txt` — `BOTH_DBS=PASS`, `OLD_APP=UP`, `RESULT=PASS`.
 
+### csv-importer (2026-07-27T23:12Z) — RESULT=PASS
+
+#### Built
+- New workspace package `packages/csv-import` (`@model-monitor/csv-import`).
+- Pure `parseMasterCsv(buffer: Buffer): ParsedMaster` — no DB writes.
+- Hazard coverage (SPEC §5.1): preamble/header assert, decimal-comma numbers,
+  UTF-8-only decode + U+2013 assert, Generation-as-text, prose booleans,
+  compound Package split with known-compound list (`ChatGPT Plus / Codex`).
+- Unit tests run against real `data/source/LLM_MASTER_v1.csv` (13 tests).
+
+#### Verified
+- `pnpm lint` 0; `pnpm typecheck` 0; `pnpm test:unit` 0 (csv-import 13/13).
+- Counts: models 51, providers 9, plans 11, accessRoutes 70, quotas 51,
+  pricing 51, benchmarkResults 155, skillScores 612, sources 51, warnings [].
+- Spot checks: GPT-5.6 Sol / GLM-5.2 / Generation / Vision null / EN DASH /
+  blank→null across all 51 rows.
+
+#### Deferred
+- None for this phase. DB application is the next phase (`csv-migration`).
+
+#### Rollback (this phase only)
+```
+rm -rf packages/csv-import
+# restore lockfile if needed:
+git checkout -- pnpm-lock.yaml
+PATH="$HOME/.local/bin:$PATH" pnpm install
+```
+
+Evidence: `$RUN_DIR/csv-importer.txt` — `RESULT=PASS`.
