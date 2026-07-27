@@ -1,8 +1,18 @@
 # progress — model-monitor
 
-## preflight (2026-07-27T21:52Z) — RESULT=PASS
+## Deferred drops
 
-### Prior failure cause (fixed)
+(none yet — deploy phase will execute items listed here)
+
+## Deferred issues
+
+(none yet)
+
+## Phase log
+
+### preflight (2026-07-27T21:52Z) — RESULT=PASS
+
+#### Prior failure cause (fixed)
 - Attempts 1–2 failed check 2: root public curl returned **307** while an older
   assertion required **200**.
 - Live behavior: `GET /` → 307 `Location: /login?callbackUrl=%2F`; `GET /login` → 200.
@@ -10,7 +20,7 @@
   (optional `callbackUrl`). Re-run under that rule → PASS.
 - No live-app auth change and no PLAN_DIR edit performed.
 
-### Built
+#### Built
 - Branch `redesign/model-directory` created from clean `master`.
 - `data/source/LLM_MASTER_v1.csv` copied from plan (53119 bytes,
   sha256 `b37b96531f332ac3940868609d659a17798b8ca30123be720cf96a888641e4e1`,
@@ -22,7 +32,7 @@
   and writes custom-format `*.dump` with a different name; docker `pg_dump|gzip`
   fallback matched the required path.
 
-### Verified
+#### Verified
 - 7 containers up; `model-monitor-web` + `model-monitor-postgres` healthy.
 - Public: root 307 → `/login?callbackUrl=%2F`; `/login` 200.
 - git was clean on `master` before branch creation.
@@ -35,22 +45,87 @@
 - CSV content: UTF-8; non-ASCII only U+2013/U+2014; header line 4 `Provider` / 76 cols;
   51 non-empty Model rows; `GPT-5.6 Sol` Reasoning Support `Yes: low–ultra` (U+2013).
 
-### Deferred / baseline notes
+#### Deferred / baseline notes
 - Did **not** run `pnpm test:unit` (forbidden here). Known master baseline:
   2 failed / 11 passed — `import-pipeline.test.ts` and `openapi-contract.test.ts`
   reference deleted `docs/implementation-package/` (commit `16eafdd`).
   `legacy-removal` deletes the affected files; no gate needs unit until then.
 - Lint warnings only (unused imports in `apps/web/e2e/subscriptions.spec.ts`).
 
-### Unsure / cosmetic
+#### Unsure / cosmetic
 - git reports `master...origin/main [gone]`; trunk remains `master` as required.
   Cosmetic upstream mismatch; not blocking.
 - `backup-create.sh` path/format differs from plan’s `preredesign-*.sql.gz` naming;
   fallback used deliberately.
 
-### Rollback (preflight mutations only)
+#### Rollback (preflight mutations only)
 ```
 git -C "$REPO_DIR" checkout master && git -C "$REPO_DIR" branch -D redesign/model-directory
 # remove data/source/ and this progress.md if reverting the whole preflight tree state
 # dump stays
+```
+
+### agents-rulebook (2026-07-27T21:55Z) — RESULT=PASS
+
+#### Built
+- Rewrote `AGENTS.md` for the model-directory redesign so cold-start agents no longer
+  receive deleted-product instructions.
+
+#### Verified
+- Read full prior `AGENTS.md` and full `$PLAN_DIR/SPEC.md` before edit.
+- Removed/replaced all listed false claims (Hermes catalog API, audit/benchmarks as
+  headline areas, mock usage, excel-import/hermes-contract packages,
+  `docs/implementation-package/` hierarchy, xlsm fixture, audit-on-every-mutation,
+  subscription-cost wording).
+- Preserved binding data/engineering invariants (null/false/0, one canonical model,
+  creator ≠ access provider, provenance + transactional idempotent import, archive
+  over delete, no secrets in artifacts, TS strict / Zod / Drizzle).
+- Added redesign binding constraints section: four primary nav destinations only;
+  colours only in `packages/ui/src/tokens.css`; personal vs external scores never
+  merged; incomplete records allowed (only `name` required); additive-only migrations
+  with drops deferred to `## Deferred drops`.
+- Ensured `progress.md` has `## Deferred drops`, `## Deferred issues`, `## Phase log`.
+- Evidence: `$RUN_DIR/agents-rulebook.txt`.
+
+#### Deferred
+- None for this phase.
+
+#### Unsure
+- None.
+
+#### Rollback (this phase only)
+```
+git -C "$REPO_DIR" checkout -- AGENTS.md progress.md
+```
+
+### agents-rulebook (2026-07-27T21:58Z) attempt 2 — RESULT=PASS
+
+#### Prior failure cause (fixed first)
+- Attempt 1 wrote a correct redesign rulebook but left the literal substring
+  `hermes-contract` in §4 ("do not restore … packages/hermes-contract").
+- Phase gate is `! grep -q "hermes-contract" "$REPO_DIR/AGENTS.md"` — any mention
+  of the deleted package path fails closed, including "do not restore" notes.
+- Fixed by rewording §4 to forbid restoring deleted pre-redesign packages without
+  spelling the banned path string. No other partial residue; kept attempt-1 rewrite.
+
+#### Built
+- Patched `AGENTS.md` §4 package note (gate-safe wording).
+- Re-verified full required/surviving rules and redesign binding constraints still present.
+- Refreshed `$RUN_DIR/agents-rulebook.txt` evidence.
+
+#### Verified
+- Gate predicates: AGENTS.md non-empty, progress.md non-empty, no `LLM_MASTER_v2.xlsm`,
+  no `hermes-contract`, `RESULT=PASS` in evidence file.
+- Surviving invariants still verbatim in spirit/text as required.
+- Headings present: `## Deferred drops`, `## Deferred issues`, `## Phase log`.
+
+#### Deferred
+- None for this phase.
+
+#### Unsure
+- None.
+
+#### Rollback (this phase only)
+```
+git -C "$REPO_DIR" checkout -- AGENTS.md progress.md
 ```
