@@ -60,12 +60,25 @@ function mapAccessProviderRow(
   };
 }
 
-function mapPlanRow(
-  row: typeof schema.plans.$inferSelect & {
-    accessProviderName: string;
-    accessProviderSlug: string;
-  },
-): z.infer<typeof planResponseSchema> {
+function mapPlanRow(row: {
+  id: string;
+  accessProviderId: string;
+  name: string;
+  slug: string;
+  planType: string | null;
+  regularPrice: string | null;
+  introductoryPrice: string | null;
+  currency: string | null;
+  billingInterval: string | null;
+  apiAccessType: (typeof schema.plans.$inferSelect)["apiAccessType"];
+  authenticationType: (typeof schema.plans.$inferSelect)["authenticationType"];
+  usageMeasurementType: string | null;
+  termsSummary: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  accessProviderName: string;
+  accessProviderSlug: string;
+}): z.infer<typeof planResponseSchema> {
   return {
     id: row.id,
     accessProviderId: row.accessProviderId,
@@ -171,7 +184,7 @@ export async function listPlans(
   }
 
   const clause = conditions.length > 0 ? and(...conditions) : undefined;
-  const rows = (await db
+  const rows = await db
     .select({
       id: schema.plans.id,
       accessProviderId: schema.plans.accessProviderId,
@@ -199,10 +212,7 @@ export async function listPlans(
       eq(schema.plans.accessProviderId, schema.accessProviders.id),
     )
     .where(clause)
-    .orderBy(schema.plans.name)) as (typeof schema.plans.$inferSelect & {
-    accessProviderName: string;
-    accessProviderSlug: string;
-  })[];
+    .orderBy(schema.plans.name);
 
   return rows.map(mapPlanRow);
 }

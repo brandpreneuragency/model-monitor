@@ -138,3 +138,47 @@ export const viewDensity = pgEnum("view_density", [
   "standard",
   "compact",
 ]);
+
+export const accessType = pgEnum("access_type", [
+  "subscription",
+  "api",
+  "free_tier",
+  "trial",
+  "open_weights",
+  "local",
+  "included",
+]);
+
+export const workflowStatus = pgEnum("workflow_status", [
+  "active",
+  "preferred",
+  "testing",
+  "preview",
+  "legacy",
+  "deprecated",
+  "archived",
+]);
+
+export const quotaUnit = pgEnum("quota_unit", [
+  "requests",
+  "tokens",
+  "credits",
+  "dollars",
+  "images",
+  "videos",
+  "compute_hours",
+  "unlimited",
+  "custom",
+]);
+
+export const quotaPeriod = pgEnum("quota_period", [
+  "hourly",
+  "five_hour_window",
+  "daily",
+  "weekly",
+  "monthly",
+  "billing_cycle",
+  "one_time",
+  "sliding_window",
+  "custom",
+]);

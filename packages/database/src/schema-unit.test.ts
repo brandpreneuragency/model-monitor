@@ -40,6 +40,7 @@ describe("SQL migrations", () => {
       "0005_idempotency_keys.sql",
       "0006_seed_ownership.sql",
       "0007_rankings_tags_views.sql",
+      "0008_plans_quotas_models.sql",
     ]);
   });
 
@@ -55,6 +56,14 @@ describe("SQL migrations", () => {
     expect(schema.tags).toBeDefined();
     expect(schema.modelTags).toBeDefined();
     expect(schema.savedViews).toBeDefined();
+  });
+
+  it("exports plan_quotas and redesign model/plan fields", () => {
+    expect(schema.planQuotas).toBeDefined();
+    expect(schema.accessType.enumValues).toContain("subscription");
+    expect(schema.workflowStatus.enumValues).toContain("preferred");
+    expect(schema.quotaUnit.enumValues).toHaveLength(9);
+    expect(schema.quotaPeriod.enumValues).toHaveLength(9);
   });
 });
 

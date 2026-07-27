@@ -400,6 +400,9 @@ describe("score pivot and global score pagination", () => {
       status: "active" as const,
       archivedAt: null,
       mergedIntoModelId: null,
+      isFavourite: false,
+      needsReview: false,
+      workflowStatus: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

@@ -10,6 +10,7 @@ import {
   integer,
   smallint,
   unique,
+  index,
 } from "drizzle-orm/pg-core";
 import { accessProviders, users } from "./core";
 import {
@@ -17,6 +18,9 @@ import {
   authenticationType,
   subscriptionStatus,
   usageTrackingMode,
+  accessType,
+  quotaUnit,
+  quotaPeriod,
 } from "./enums";
 
 // ── Plans ──────────────────────────────────────────────────────
@@ -37,11 +41,51 @@ export const plans = pgTable("plans", {
   termsSummary: text("terms_summary"),
   status: text("status").notNull().default("active"),
   archivedAt: timestamp("archived_at", { withTimezone: true }),
+  // Billing fields absorbed from subscriptions (SPEC §4.2) — nullable.
+  renewalDate: date("renewal_date"),
+  billingPeriod: text("billing_period"),
+  autoRenews: boolean("auto_renews"),
+  actualPrice: numeric("actual_price", { precision: 12, scale: 4 }),
+  notes: text("notes"),
+  startedAt: date("started_at"),
+  cancelledAt: date("cancelled_at"),
+  introPriceExpiresAt: date("intro_price_expires_at"),
+  accessType: accessType("access_type"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   uniqueProviderSlug: unique().on(t.accessProviderId, t.slug),
 }));
+
+// ── Plan quotas (SPEC §4.1) ────────────────────────────────────
+
+export const planQuotas = pgTable(
+  "plan_quotas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => plans.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    amount: numeric("amount"),
+    amountMin: numeric("amount_min"),
+    amountMax: numeric("amount_max"),
+    unit: quotaUnit("unit").notNull(),
+    customUnit: text("custom_unit"),
+    period: quotaPeriod("period").notNull(),
+    resetBehaviour: text("reset_behaviour"),
+    remainingAmount: numeric("remaining_amount"),
+    remainingUpdatedAt: timestamp("remaining_updated_at", { withTimezone: true }),
+    resetsAt: date("resets_at"),
+    isUnlimited: boolean("is_unlimited").notNull().default(false),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    planIdIdx: index("plan_quotas_plan_id_idx").on(t.planId),
+  }),
+);
 
 // ── Subscriptions ──────────────────────────────────────────────
 

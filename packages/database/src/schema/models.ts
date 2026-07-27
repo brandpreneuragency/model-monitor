@@ -10,8 +10,10 @@ import {
   jsonb,
   integer,
   char,
+  uniqueIndex,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { developers, accessProviders } from "./core";
 import { plans } from "./subscriptions";
 import {
@@ -20,6 +22,7 @@ import {
   availabilityStatus,
   accessMethod,
   authenticationType,
+  workflowStatus,
 } from "./enums";
 
 // ── Models ─────────────────────────────────────────────────────
@@ -52,6 +55,10 @@ export const models = pgTable("models", {
   status: recordStatus("status").notNull().default("active"),
   archivedAt: timestamp("archived_at", { withTimezone: true }),
   mergedIntoModelId: uuid("merged_into_model_id").references((): AnyPgColumn => models.id),
+  // SPEC §4.2 — redesign workflow fields (additive).
+  isFavourite: boolean("is_favourite").notNull().default(false),
+  needsReview: boolean("needs_review").notNull().default(false),
+  workflowStatus: workflowStatus("workflow_status"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -88,30 +95,40 @@ export const modelCapabilities = pgTable("model_capabilities", {
 
 // ── Model Access ───────────────────────────────────────────────
 
-export const modelAccess = pgTable("model_access", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  modelId: uuid("model_id").notNull().references(() => models.id),
-  planId: uuid("plan_id").notNull().references(() => plans.id),
-  providerModelId: text("provider_model_id"),
-  availability: availabilityStatus("availability").notNull().default("unconfirmed"),
-  accessMethod: accessMethod("access_method").notNull(),
-  authenticationType: authenticationType("authentication_type").notNull().default("other"),
-  includedInPlan: boolean("included_in_plan"),
-  apiCompatible: boolean("api_compatible"),
-  cliOnly: boolean("cli_only").notNull().default(false),
-  webOnly: boolean("web_only").notNull().default(false),
-  oauthSupported: boolean("oauth_supported"),
-  priority: integer("priority"),
-  limitations: text("limitations"),
-  verifiedAt: timestamp("verified_at", { withTimezone: true }),
-  availableFrom: date("available_from"),
-  availableUntil: date("available_until"),
-  notes: text("notes"),
-  status: recordStatus("status").notNull().default("active"),
-  archivedAt: timestamp("archived_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const modelAccess = pgTable(
+  "model_access",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    modelId: uuid("model_id").notNull().references(() => models.id),
+    planId: uuid("plan_id").notNull().references(() => plans.id),
+    providerModelId: text("provider_model_id"),
+    availability: availabilityStatus("availability").notNull().default("unconfirmed"),
+    accessMethod: accessMethod("access_method").notNull(),
+    authenticationType: authenticationType("authentication_type").notNull().default("other"),
+    includedInPlan: boolean("included_in_plan"),
+    apiCompatible: boolean("api_compatible"),
+    cliOnly: boolean("cli_only").notNull().default(false),
+    webOnly: boolean("web_only").notNull().default(false),
+    oauthSupported: boolean("oauth_supported"),
+    priority: integer("priority"),
+    limitations: text("limitations"),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    availableFrom: date("available_from"),
+    availableUntil: date("available_until"),
+    notes: text("notes"),
+    status: recordStatus("status").notNull().default("active"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    // SPEC §4.2 — at most one preferred access route per model.
+    isPreferred: boolean("is_preferred").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    preferredUidx: uniqueIndex("model_access_preferred_uidx")
+      .on(t.modelId)
+      .where(sql`${t.isPreferred}`),
+  }),
+);
 
 // ── Model Access Pricing ───────────────────────────────────────
 

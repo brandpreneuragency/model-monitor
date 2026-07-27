@@ -368,3 +368,59 @@ git -C "$REPO_DIR" checkout -- packages/
 
 Evidence: `$RUN_DIR/schema-rankings.txt` — `BOTH_DBS=PASS`, `OLD_APP=UP`, `RESULT=PASS`.
 
+### schema-plans-models (2026-07-27T23:04Z) — RESULT=PASS
+
+#### Built
+- Pre-migration dump: `~/01_atlas/05_backups/model-monitor-schema-plans-models-20260727T225332Z.sql.gz` (115541 B).
+- Hand-written `packages/database/migrations/0008_plans_quotas_models.sql`:
+  - enums: `access_type` (7), `workflow_status` (7), `quota_unit` (9), `quota_period` (9)
+  - `plans` nullable billing cols: renewal_date, billing_period, auto_renews, actual_price,
+    notes, started_at, cancelled_at, intro_price_expires_at, access_type
+  - new table `plan_quotas` (SPEC §4.1) + index on plan_id
+  - `models`: is_favourite, needs_review (bool not null default false), workflow_status nullable
+  - `model_access`: is_preferred + partial unique index `model_access_preferred_uidx`
+  - backfill `models.workflow_status` from lifecycle/status (prod: 51 → active)
+  - fold 4 real subscriptions → plans (copy only; subscriptions untouched)
+- Drizzle: enums + plans/plan_quotas + models/model_access mirrors
+- Zod: `packages/schemas/src/plans-models.ts` + primitives/phase3 field extensions
+- Integration: `plans-models.integration.test.ts` (quota insert, preferred unique, nullable ws)
+- Compat: `services/plans.ts` mapPlanRow row type; models.integration mock row; schema-unit list
+
+#### Verified
+- Applied 0008 to **both** `modelmonitor` and `modelmonitor_test`
+  (test via direct `tsx src/migrate.ts` with DATABASE_URL path override — turbo does not
+  forward DATABASE_URL to package scripts)
+- Column lists match for plans/models/model_access/plan_quotas → `BOTH_DBS=PASS`
+- plan_quotas count = 0; models 51/51 non-null workflow_status; 4 plans folded;
+  subscriptions still 4 rows
+- OLD_APP: 7 containers; `/` 307 → `/login?callbackUrl=%2F`; `/login` 200 → `OLD_APP=UP`
+- `pnpm lint` 0; `pnpm typecheck` 0; `pnpm test:unit` 0; `pnpm test:integration` 0
+  (plans-models.integration.test.ts 3/3)
+
+#### Deferred
+- `subscriptions` / `subscription_limit_rules` remain in `## Deferred drops` (fold was a copy;
+  old app still reads them). Drop only in deploy-finalize.
+
+#### Unsure
+- None blocking. `plan_quotas` includes created_at/updated_at for consistency with other tables
+  (SPEC §4.1 listed domain columns only).
+
+#### Rollback (this phase only)
+```
+# BOTH dbs:
+# ALTER TABLE model_access DROP COLUMN IF EXISTS is_preferred;
+# DROP INDEX IF EXISTS model_access_preferred_uidx;
+# ALTER TABLE models DROP COLUMN IF EXISTS is_favourite, DROP COLUMN IF EXISTS needs_review,
+#   DROP COLUMN IF EXISTS workflow_status;
+# ALTER TABLE plans DROP COLUMN IF EXISTS renewal_date, DROP COLUMN IF EXISTS billing_period,
+#   DROP COLUMN IF EXISTS auto_renews, DROP COLUMN IF EXISTS actual_price, DROP COLUMN IF EXISTS notes,
+#   DROP COLUMN IF EXISTS started_at, DROP COLUMN IF EXISTS cancelled_at,
+#   DROP COLUMN IF EXISTS intro_price_expires_at, DROP COLUMN IF EXISTS access_type;
+# DROP TABLE IF EXISTS plan_quotas CASCADE;
+# DROP TYPE IF EXISTS access_type, workflow_status, quota_unit, quota_period;
+# DELETE FROM schema_migrations WHERE filename = '0008_plans_quotas_models.sql';
+git -C "$REPO_DIR" checkout -- packages/
+```
+
+Evidence: `$RUN_DIR/schema-plans-models.txt` — `BOTH_DBS=PASS`, `OLD_APP=UP`, `RESULT=PASS`.
+

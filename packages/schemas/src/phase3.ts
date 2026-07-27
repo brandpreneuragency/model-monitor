@@ -66,6 +66,7 @@ export const localModelAccessWriteSchema = z.object({
   oauthSupported: z.boolean().nullable().optional(),
   priority: z.number().int().nullable().optional(),
   limitations: z.string().nullable().optional(),
+  isPreferred: z.boolean().optional(),
 });
 
 export const localModelAccessResponseSchema = localModelAccessWriteSchema.extend({
@@ -93,6 +94,26 @@ export const localPlanWriteSchema = z.object({
   authenticationType: authenticationTypeSchema.default("other"),
   usageMeasurementType: z.string().nullable().optional(),
   termsSummary: z.string().nullable().optional(),
+  renewalDate: z.string().date().nullable().optional(),
+  billingPeriod: z.string().nullable().optional(),
+  autoRenews: z.boolean().nullable().optional(),
+  actualPrice: z.number().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  startedAt: z.string().date().nullable().optional(),
+  cancelledAt: z.string().date().nullable().optional(),
+  introPriceExpiresAt: z.string().date().nullable().optional(),
+  accessType: z
+    .enum([
+      "subscription",
+      "api",
+      "free_tier",
+      "trial",
+      "open_weights",
+      "local",
+      "included",
+    ])
+    .nullable()
+    .optional(),
 });
 
 export const usageSourceSchema = z.enum([

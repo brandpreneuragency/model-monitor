@@ -206,6 +206,20 @@ export const modelWriteSchema = z.object({
   maxOutputTokens: z.number().int().nonnegative().nullable().optional(),
   speedRating: z.preprocess(emptyToNull, z.string().nullable().optional()),
   needsRecheck: z.boolean().default(true),
+  isFavourite: z.boolean().optional(),
+  needsReview: z.boolean().optional(),
+  workflowStatus: z
+    .enum([
+      "active",
+      "preferred",
+      "testing",
+      "preview",
+      "legacy",
+      "deprecated",
+      "archived",
+    ])
+    .nullable()
+    .optional(),
   capabilities: modelCapabilitiesWriteSchema.optional(),
   aliases: z.array(modelAliasWriteSchema).optional(),
 });
