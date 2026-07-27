@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rankings — Model Directory (reference)</title>
+  <link rel="stylesheet" href="../../packages/ui/src/tokens.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font-family: var(--font-sans); font-size: var(--text-body-size); font-weight: var(--text-body-weight);
+      line-height: var(--text-body-line); color: var(--text); background: var(--bg-app);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    button { font: inherit; color: inherit; }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: var(--sidebar-width); flex-shrink: 0; background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle); display: flex; flex-direction: column;
+      padding: var(--space-4) var(--space-3); position: sticky; top: 0; height: 100vh;
+    }
+    .brand { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); margin-bottom: var(--space-4); }
+    .brand-mark {
+      width: 28px; height: 28px; border-radius: var(--radius-lg); background: var(--accent);
+      display: grid; place-items: center; font-weight: 700;
+    }
+    .brand-name { font-size: var(--text-card-size); font-weight: 600; }
+    .nav { display: flex; flex-direction: column; gap: var(--space-1); }
+    .nav a {
+      display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-lg); color: var(--text-muted);
+    }
+    .nav a.active { background: var(--accent); color: var(--text); font-weight: 600; }
+    .nav-section {
+      margin-top: var(--space-6); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle);
+      font-size: 10px; letter-spacing: 0.08em; color: var(--text-faint); font-weight: 600;
+      padding-left: var(--space-3); margin-bottom: var(--space-2);
+    }
+    .shortcut {
+      display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1_5) var(--space-3);
+      border-radius: var(--radius-md); color: var(--text-muted); font-size: var(--text-meta-size);
+    }
+    .logo-tile {
+      width: 18px; height: 18px; border-radius: var(--radius-sm); background: var(--bg-card);
+      border: 1px solid var(--border); display: grid; place-items: center; font-size: 9px; font-weight: 700;
+      color: var(--text-muted); flex-shrink: 0;
+    }
+    .sidebar-foot { margin-top: auto; }
+    .promo {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl);
+      padding: var(--space-4); font-size: var(--text-meta-size); color: var(--text-muted);
+    }
+    .promo strong { display: block; color: var(--text); margin-bottom: var(--space-1); }
+    .promo .btn { margin-top: var(--space-3); width: 100%; }
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg-surface); }
+    .topbar {
+      height: var(--topbar-height); display: flex; align-items: center; gap: var(--space-3);
+      padding: 0 var(--space-6); border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; z-index: 20;
+      background: var(--bg-surface);
+    }
+    .search {
+      flex: 1; max-width: 480px; margin: 0 auto; display: flex; align-items: center; gap: var(--space-2);
+      background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-full);
+      padding: var(--space-2) var(--space-4); color: var(--text-faint); font-size: var(--text-meta-size);
+    }
+    .search .hint { margin-left: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 6px; font-size: 10px; }
+    .top-actions { display: flex; align-items: center; gap: var(--space-2); margin-left: auto; }
+    .select-pill, .icon-btn, .dd {
+      background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: var(--space-1_5) var(--space-3); color: var(--text-muted); font-size: var(--text-meta-size);
+    }
+    .icon-btn { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1_5);
+      border-radius: var(--radius-md); padding: var(--space-1_5) var(--space-3);
+      border: 1px solid transparent; font-size: var(--text-meta-size); font-weight: 600;
+    }
+    .btn-primary { background: var(--accent); color: var(--text); }
+    .btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .avatar {
+      width: 32px; height: 32px; border-radius: var(--radius-full); background: var(--advanced-bg);
+      border: 1px solid var(--border); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--advanced);
+    }
+    .content {
+      display: grid; grid-template-columns: 1fr var(--rail-width); gap: var(--space-4);
+      padding: var(--space-6); align-items: start;
+    }
+    .col-main { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+    .col-rail { display: flex; flex-direction: column; gap: var(--space-4); position: sticky; top: calc(var(--topbar-height) + var(--space-4)); }
+    .page-head h1 { margin: 0; font-size: var(--text-page-size); font-weight: var(--text-page-weight); }
+    .page-head p { margin: var(--space-1) 0 0; color: var(--text-muted); font-size: var(--text-meta-size); }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-4);
+    }
+    .card-h { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); flex-wrap: wrap; }
+    .card-h h2 { margin: 0; font-size: var(--text-section-size); font-weight: var(--text-section-weight); }
+    .filters {
+      display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: var(--space-3);
+    }
+    .filters .dd { min-width: 140px; }
+    .chip {
+      display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-md);
+      font-size: 11px; font-weight: 600;
+    }
+    .chip-ok { background: var(--ok-bg); color: var(--ok); }
+    .chip-warn { background: var(--warn-bg); color: var(--warn); }
+    .chip-danger { background: var(--danger-bg); color: var(--danger); }
+    .chip-neutral { background: var(--neutral-bg); color: var(--text-muted); }
+    .muted { color: var(--text-muted); }
+    .faint { color: var(--text-faint); }
+    .link-muted { color: var(--text-muted); font-size: var(--text-meta-size); }
+    table { width: 100%; border-collapse: collapse; font-size: var(--text-body-size); }
+    th {
+      text-align: left; color: var(--text-muted); font-weight: 500; font-size: var(--text-meta-size);
+      padding: var(--space-2) var(--space-2); border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    td {
+      padding: 0 var(--space-2); height: var(--row-standard); border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap; vertical-align: middle;
+    }
+    .cell-model { display: flex; align-items: center; gap: var(--space-2); }
+    .medal {
+      width: 24px; height: 24px; border-radius: var(--radius-full); display: grid; place-items: center;
+      font-size: 11px; font-weight: 700;
+    }
+    .medal.g { background: var(--warn-bg); color: var(--warn); }
+    .medal.s { background: var(--neutral-bg); color: var(--text-muted); }
+    .medal.b { background: var(--warn-bg); color: var(--warn); opacity: 0.8; }
+    .rank-plain { width: 24px; text-align: center; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .score-box {
+      display: inline-flex; align-items: center; gap: 4px; min-width: 40px; justify-content: center;
+      padding: 2px 8px; border-radius: var(--radius-sm); font-weight: 600; font-size: 12px;
+      border: 1px solid var(--border);
+    }
+    .score-empty { background: var(--score-empty-bg); color: var(--score-empty); }
+    .score-ext { background: var(--info-bg); color: var(--info); border-color: var(--info-bg); }
+    .score-hi { background: var(--score-exceptional-bg); color: var(--score-exceptional); border-color: var(--score-exceptional-bg); }
+    .score-st { background: var(--score-strong-bg); color: var(--score-strong); border-color: var(--score-strong-bg); }
+    .score-av { background: var(--score-average-bg); color: var(--score-average); border-color: var(--score-average-bg); }
+    .score-bl { background: var(--score-below-bg); color: var(--score-below); border-color: var(--score-below-bg); }
+    .score-wk { background: var(--score-weak-bg); color: var(--score-weak); border-color: var(--score-weak-bg); }
+    .pencil { color: var(--text-faint); font-size: 11px; }
+    .footer-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+      padding-top: var(--space-3); font-size: var(--text-meta-size); color: var(--text-muted);
+    }
+    .pager { display: flex; align-items: center; gap: var(--space-1); }
+    .pager span, .pager button {
+      min-width: 28px; height: 28px; display: grid; place-items: center;
+      border-radius: var(--radius-md); border: 1px solid transparent; background: transparent; color: var(--text-muted);
+    }
+    .pager .on { border-color: var(--border); background: var(--bg-input); color: var(--text); }
+    .bottom-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--space-3); }
+    .heat td.cell {
+      text-align: center; font-weight: 600; font-size: 12px; border-radius: var(--radius-sm);
+      height: 36px; border-bottom: none; padding: 4px;
+    }
+    .heat th.model, .heat td.model { text-align: left; white-space: nowrap; }
+    .scale {
+      display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;
+      margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle);
+      font-size: 11px; color: var(--text-muted);
+    }
+    .scale i {
+      display: inline-block; width: 12px; height: 12px; border-radius: var(--radius-sm); margin-right: 4px; vertical-align: middle;
+    }
+    .segment {
+      display: inline-flex; background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 2px;
+    }
+    .segment span { padding: 4px 10px; border-radius: var(--radius-sm); font-size: 11px; color: var(--text-muted); }
+    .segment span.on { background: var(--accent); color: var(--text); font-weight: 600; }
+    .legend { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); font-size: 11px; }
+    .legend span::before {
+      content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px;
+    }
+    .l1::before { background: var(--chart-1); }
+    .l2::before { background: var(--chart-2); }
+    .l3::before { background: var(--chart-3); }
+    .l4::before { background: var(--chart-4); }
+    .profile {
+      display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-lg); border: 1px solid transparent; margin-bottom: var(--space-2);
+    }
+    .profile.on { background: var(--accent-bg); border-color: var(--accent-border); }
+    .profile:hover { background: var(--bg-row-hover); }
+    .profile-ico {
+      width: 32px; height: 32px; border-radius: var(--radius-lg); background: var(--bg-input);
+      border: 1px solid var(--border); display: grid; place-items: center; color: var(--text-muted);
+    }
+    .profile .nm { font-size: var(--text-card-size); font-weight: 600; }
+    .profile .sub { font-size: 11px; color: var(--text-faint); }
+    .tip {
+      background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+      padding: var(--space-3); font-size: var(--text-meta-size); color: var(--text-muted); margin-top: var(--space-3);
+    }
+    .tip strong { color: var(--advanced); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">◇</div><div class="brand-name">Model Directory</div></div>
+      <nav class="nav">
+        <a href="overview.html">⌂ Overview</a>
+        <a href="models.html">▣ Models</a>
+        <a class="active" href="rankings.html">☰ Rankings</a>
+        <a href="providers.html">⧉ Providers &amp; Plans</a>
+      </nav>
+      <div class="nav-section">SHORTCUTS</div>
+      <a class="shortcut" href="#"><span class="logo-tile">O</span> OpenAI</a>
+      <a class="shortcut" href="#"><span class="logo-tile">A</span> Anthropic</a>
+      <a class="shortcut" href="#"><span class="logo-tile">G</span> Google</a>
+      <a class="shortcut" href="#"><span class="logo-tile">OC</span> OpenCode</a>
+      <a class="shortcut" href="#"><span class="logo-tile">x</span> xAI</a>
+      <a class="shortcut" href="#"><span class="logo-tile">M</span> Mistral</a>
+      <a class="shortcut" href="#"><span class="logo-tile">N</span> NVIDIA</a>
+      <a class="shortcut" href="#"><span class="logo-tile">+</span> View all</a>
+      <div class="nav-section" style="border:0;margin-top:var(--space-4);padding-top:0"></div>
+      <a class="shortcut" href="#">⇪ Import / Export</a>
+      <a class="shortcut" href="#">⚙ Settings</a>
+      <div class="sidebar-foot">
+        <div class="promo">
+          <strong>Your rankings drive smarter choices</strong>
+          Rank models across skills that matter to you. Scores are private to your profile.
+          <button type="button" class="btn btn-ghost">Learn more</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="search">⌕ Search models, providers, plans, tags… <span class="hint">⌘ K</span></div>
+        <div class="top-actions">
+          <div class="select-pill">Best Everyday Model ▾</div>
+          <button type="button" class="icon-btn">▤</button>
+          <button type="button" class="btn btn-primary">✎ Edit Ratings</button>
+          <button type="button" class="icon-btn">◐</button>
+          <div class="avatar">BP</div>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="col-main">
+          <div class="page-head">
+            <h1>Rankings</h1>
+            <p>Rank and compare models across the skills that matter most to you.</p>
+          </div>
+
+          <div class="filters">
+            <span class="dd">Skill: Coding ▾</span>
+            <span class="dd">Profile: Best Everyday Model ▾</span>
+            <span class="dd">Provider: All Providers ▾</span>
+            <span class="dd">Min. Confidence: All ▾</span>
+            <button type="button" class="btn btn-ghost" style="margin-left:auto">+ Add Skill</button>
+          </div>
+
+          <section class="card">
+            <div class="card-h">
+              <div style="display:flex;align-items:center;gap:var(--space-2)">
+                <h2>Leaderboard — Coding</h2>
+                <a class="link-muted" href="#">✎ Edit skill</a>
+              </div>
+              <div style="display:flex;gap:var(--space-2)">
+                <span class="dd">By Personal Score ▾</span>
+                <button type="button" class="btn btn-ghost">▦ Columns</button>
+                <button type="button" class="btn btn-ghost">⇪ Export</button>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Model</th>
+                  <th>Personal Score</th>
+                  <th>External Score</th>
+                  <th>Confidence</th>
+                  <th>Provider</th>
+                  <th>Access Plan</th>
+                  <th>Cost (USD)</th>
+                  <th>Best Use</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="medal g">1</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">A</span> Claude Sonnet 5 <span class="chip chip-neutral" style="font-size:10px">New</span></div></td>
+                  <td><span class="score-box score-empty">— <span class="pencil">✎</span></span></td>
+                  <td><span class="score-box score-ext">92</span></td>
+                  <td><span class="chip chip-ok">High</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">A</span> Anthropic</div></td>
+                  <td class="muted">Pro</td>
+                  <td class="muted">$3 / 1M tok</td>
+                  <td class="muted">Complex coding</td>
+                  <td class="faint">Excellent at refactors</td>
+                </tr>
+                <tr>
+                  <td><span class="medal s">2</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">O</span> GPT-5.6 Sol</div></td>
+                  <td><span class="score-box score-empty">— <span class="pencil">✎</span></span></td>
+                  <td><span class="score-box score-ext">90</span></td>
+                  <td><span class="chip chip-ok">High</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">O</span> OpenAI</div></td>
+                  <td class="muted">Plus</td>
+                  <td class="muted">$20 / mo</td>
+                  <td class="muted">General coding</td>
+                  <td class="faint">Great all-rounder</td>
+                </tr>
+                <tr>
+                  <td><span class="medal b">3</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">G</span> Gemini 3.5 Flash</div></td>
+                  <td><span class="score-box score-empty">— <span class="pencil">✎</span></span></td>
+                  <td><span class="score-box score-ext">87</span></td>
+                  <td><span class="chip chip-ok">High</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">G</span> Google</div></td>
+                  <td class="muted">Advanced</td>
+                  <td class="muted">$1.25 / 1M tok</td>
+                  <td class="muted">Long context</td>
+                  <td class="faint">1M context win</td>
+                </tr>
+                <tr>
+                  <td><span class="rank-plain">4</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">OC</span> GLM-5.2</div></td>
+                  <td><span class="score-box score-empty">— <span class="pencil">✎</span></span></td>
+                  <td><span class="score-box score-ext">86</span></td>
+                  <td><span class="chip chip-ok">High</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">OC</span> OpenCode</div></td>
+                  <td class="muted">Go</td>
+                  <td class="muted">$0.27 / 1M tok</td>
+                  <td class="muted">Reasoning + code</td>
+                  <td class="faint">Strong reasoning</td>
+                </tr>
+                <tr>
+                  <td><span class="rank-plain">5</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">x</span> Grok 4.5</div></td>
+                  <td><span class="score-box score-empty">— <span class="pencil">✎</span></span></td>
+                  <td><span class="score-box score-ext">81</span></td>
+                  <td><span class="chip chip-warn">Medium</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">x</span> xAI</div></td>
+                  <td class="muted">Premium+</td>
+                  <td class="muted">$40 / mo</td>
+                  <td class="muted">Real-time coding</td>
+                  <td class="faint">Web + live data</td>
+                </tr>
+                <tr>
+                  <td><span class="rank-plain">6</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">OC</span> MiMo-V2.5-Pro</div></td>
+                  <td><span class="score-box score-empty">— <span class="pencil">✎</span></span></td>
+                  <td><span class="score-box score-ext">78</span></td>
+                  <td><span class="chip chip-warn">Medium</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">OC</span> OpenCode</div></td>
+                  <td class="muted">Go</td>
+                  <td class="muted">$0.14 / 1M tok</td>
+                  <td class="muted">Code + tools</td>
+                  <td class="faint">Open weights</td>
+                </tr>
+                <tr>
+                  <td><span class="rank-plain">7</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">M</span> Mistral Large 3</div></td>
+                  <td><span class="score-box score-empty">— <span class="pencil">✎</span></span></td>
+                  <td><span class="score-box score-ext">76</span></td>
+                  <td><span class="chip chip-warn">Medium</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">M</span> Mistral</div></td>
+                  <td class="muted">Enterprise</td>
+                  <td class="muted">$0.8 / 1M tok</td>
+                  <td class="muted">Enterprise code</td>
+                  <td class="faint">Good enterprise fit</td>
+                </tr>
+                <tr>
+                  <td><span class="rank-plain">8</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">A</span> Claude Opus 4.8</div></td>
+                  <td><span class="score-box score-empty">— <span class="pencil">✎</span></span></td>
+                  <td><span class="score-box score-ext">74</span></td>
+                  <td><span class="chip chip-warn">Medium</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">A</span> Anthropic</div></td>
+                  <td class="muted">Pro</td>
+                  <td class="muted">$15 / 1M tok</td>
+                  <td class="muted">General coding</td>
+                  <td class="faint">Balanced upgrade</td>
+                </tr>
+                <tr>
+                  <td><span class="rank-plain">9</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">OC</span> Qwen3.7 Max</div></td>
+                  <td><span class="score-box score-empty">— <span class="pencil">✎</span></span></td>
+                  <td><span class="score-box score-ext">70</span></td>
+                  <td><span class="chip chip-warn">Medium</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">OC</span> OpenCode</div></td>
+                  <td class="muted">Go</td>
+                  <td class="muted">$0.6 / 1M tok</td>
+                  <td class="muted">Cost-effective</td>
+                  <td class="faint">Solid performance</td>
+                </tr>
+                <tr>
+                  <td><span class="rank-plain">10</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">OC</span> DeepSeek V4 Flash</div></td>
+                  <td><span class="score-box score-empty">— <span class="pencil">✎</span></span></td>
+                  <td><span class="score-box score-ext">66</span></td>
+                  <td><span class="chip chip-danger">Low</span></td>
+                  <td><div class="cell-model"><span class="logo-tile">OC</span> OpenCode</div></td>
+                  <td class="muted">Go</td>
+                  <td class="muted">$0 / mo</td>
+                  <td class="muted">Budget coding</td>
+                  <td class="faint">Free tier option</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="footer-bar">
+              <span>Showing 1 to 10 of 24 models</span>
+              <div class="pager">
+                <button type="button">‹</button>
+                <span class="on">1</span>
+                <span>2</span>
+                <span>3</span>
+                <button type="button">›</button>
+                <button type="button">»</button>
+              </div>
+            </div>
+          </section>
+
+          <div class="bottom-2">
+            <section class="card">
+              <div class="card-h">
+                <h2>Score Matrix Across Skills</h2>
+                <div style="display:flex;gap:var(--space-2);align-items:center">
+                  <div class="segment"><span class="on">Heatmap</span><span>Numbers</span></div>
+                  <button type="button" class="btn btn-ghost">⛶ Full screen</button>
+                  <button type="button" class="icon-btn" aria-label="Collapse">⌃</button>
+                </div>
+              </div>
+              <table class="heat">
+                <thead>
+                  <tr>
+                    <th class="model">Model</th>
+                    <th>Coding</th>
+                    <th>UI / Frontend</th>
+                    <th>Architecture</th>
+                    <th>Review / Debug</th>
+                    <th>Long Context</th>
+                    <th>Value</th>
+                    <th>Speed</th>
+                    <th>Avg Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="model"><div class="cell-model"><span class="logo-tile">A</span> Claude Sonnet 5</div></td>
+                    <td class="cell score-hi">9.6</td>
+                    <td class="cell score-hi">9.4</td>
+                    <td class="cell score-hi">9.2</td>
+                    <td class="cell score-hi">9.3</td>
+                    <td class="cell score-st">9.0</td>
+                    <td class="cell score-st">8.5</td>
+                    <td class="cell score-st">8.6</td>
+                    <td class="cell score-hi">9.1</td>
+                  </tr>
+                  <tr>
+                    <td class="model"><div class="cell-model"><span class="logo-tile">O</span> GPT-5.6 Sol</div></td>
+                    <td class="cell score-hi">9.1</td>
+                    <td class="cell score-hi">9.2</td>
+                    <td class="cell score-st">8.8</td>
+                    <td class="cell score-st">9.0</td>
+                    <td class="cell score-st">8.6</td>
+                    <td class="cell score-st">7.8</td>
+                    <td class="cell score-st">8.9</td>
+                    <td class="cell score-st">8.8</td>
+                  </tr>
+                  <tr>
+                    <td class="model"><div class="cell-model"><span class="logo-tile">G</span> Gemini 3.5 Flash</div></td>
+                    <td class="cell score-st">8.7</td>
+                    <td class="cell score-st">8.3</td>
+                    <td class="cell score-st">8.6</td>
+                    <td class="cell score-st">8.5</td>
+                    <td class="cell score-hi">9.6</td>
+                    <td class="cell score-st">8.2</td>
+                    <td class="cell score-st">8.2</td>
+                    <td class="cell score-st">8.6</td>
+                  </tr>
+                  <tr>
+                    <td class="model"><div class="cell-model"><span class="logo-tile">OC</span> GLM-5.2</div></td>
+                    <td class="cell score-st">8.6</td>
+                    <td class="cell score-st">7.2</td>
+                    <td class="cell score-st">8.3</td>
+                    <td class="cell score-st">8.8</td>
+                    <td class="cell score-st">8.0</td>
+                    <td class="cell score-hi">9.2</td>
+                    <td class="cell score-st">7.6</td>
+                    <td class="cell score-st">8.2</td>
+                  </tr>
+                  <tr>
+                    <td class="model"><div class="cell-model"><span class="logo-tile">x</span> Grok 4.5</div></td>
+                    <td class="cell score-st">8.0</td>
+                    <td class="cell score-av">6.8</td>
+                    <td class="cell score-st">7.9</td>
+                    <td class="cell score-st">7.8</td>
+                    <td class="cell score-hi">9.1</td>
+                    <td class="cell score-hi">9.9</td>
+                    <td class="cell score-st">7.2</td>
+                    <td class="cell score-st">8.0</td>
+                  </tr>
+                  <tr>
+                    <td class="model"><div class="cell-model"><span class="logo-tile">OC</span> MiMo-V2.5-Pro</div></td>
+                    <td class="cell score-st">7.8</td>
+                    <td class="cell score-av">6.9</td>
+                    <td class="cell score-st">7.7</td>
+                    <td class="cell score-st">7.5</td>
+                    <td class="cell score-st">8.4</td>
+                    <td class="cell score-st">8.9</td>
+                    <td class="cell score-st">7.1</td>
+                    <td class="cell score-st">7.8</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="scale">
+                <span>Score Scale:</span>
+                <span><i style="background:var(--score-exceptional)"></i>9–10 Exceptional</span>
+                <span><i style="background:var(--score-strong)"></i>7–8 Strong</span>
+                <span><i style="background:var(--score-average)"></i>5–6 Average</span>
+                <span><i style="background:var(--score-below)"></i>3–4 Below Avg</span>
+                <span><i style="background:var(--score-weak)"></i>0–2 Weak</span>
+                <span class="faint" style="margin-left:auto">Skills: 7</span>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-h">
+                <h2>Skill Radar</h2>
+                <span class="dd">Top 4 models ▾</span>
+              </div>
+              <div class="legend">
+                <span class="l1 muted">Claude Sonnet 5</span>
+                <span class="l2 muted">GPT-5.6 Sol</span>
+                <span class="l3 muted">Gemini 3.5 Flash</span>
+                <span class="l4 muted">GLM-5.2</span>
+              </div>
+              <svg viewBox="0 0 260 220" width="100%" height="220" aria-label="Skill radar">
+                <g transform="translate(130,110)">
+                  <!-- grid rings -->
+                  <polygon fill="none" stroke="var(--chart-grid)" points="0,-90 78,-28 48,78 -48,78 -78,-28" />
+                  <polygon fill="none" stroke="var(--chart-grid)" points="0,-60 52,-18 32,52 -32,52 -52,-18" />
+                  <polygon fill="none" stroke="var(--chart-grid)" points="0,-30 26,-9 16,26 -16,26 -26,-9" />
+                  <line x1="0" y1="0" x2="0" y2="-90" stroke="var(--chart-grid)" />
+                  <line x1="0" y1="0" x2="78" y2="-28" stroke="var(--chart-grid)" />
+                  <line x1="0" y1="0" x2="48" y2="78" stroke="var(--chart-grid)" />
+                  <line x1="0" y1="0" x2="-48" y2="78" stroke="var(--chart-grid)" />
+                  <line x1="0" y1="0" x2="-78" y2="-28" stroke="var(--chart-grid)" />
+                  <!-- series -->
+                  <polygon fill="var(--accent-bg)" stroke="var(--chart-1)" stroke-width="1.5" points="0,-86 70,-24 42,70 -40,68 -72,-22" />
+                  <polygon fill="none" stroke="var(--chart-2)" stroke-width="1.5" points="0,-80 72,-20 40,62 -38,60 -70,-18" />
+                  <polygon fill="none" stroke="var(--chart-3)" stroke-width="1.5" points="0,-72 60,-22 44,74 -30,55 -55,-20" />
+                  <polygon fill="none" stroke="var(--chart-4)" stroke-width="1.5" points="0,-70 55,-18 38,60 -42,72 -65,-16" />
+                </g>
+                <text x="130" y="14" text-anchor="middle" fill="var(--text-faint)" font-size="10">Coding</text>
+                <text x="230" y="80" fill="var(--text-faint)" font-size="10">UI / Frontend</text>
+                <text x="200" y="210" fill="var(--text-faint)" font-size="10">Architecture</text>
+                <text x="40" y="210" fill="var(--text-faint)" font-size="10">Review / Debug</text>
+                <text x="8" y="80" fill="var(--text-faint)" font-size="10">Long Context</text>
+              </svg>
+              <p class="faint" style="margin:var(--space-2) 0 0;font-size:11px">Radar shows scores for the selected skill set. Higher is better.</p>
+            </section>
+          </div>
+        </div>
+
+        <aside class="col-rail">
+          <section class="card">
+            <div class="card-h">
+              <h2>Ranking Profiles</h2>
+              <a class="link-muted" href="#">Manage</a>
+            </div>
+
+            <div class="profile on">
+              <div class="profile-ico">◈</div>
+              <div style="flex:1">
+                <div class="nm">Best Everyday Model <span style="color:var(--warn)">★</span></div>
+                <div class="sub">Default profile · 7 skills</div>
+              </div>
+              <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+            </div>
+            <div class="profile">
+              <div class="profile-ico">⚒</div>
+              <div style="flex:1"><div class="nm">Heavy Coding</div><div class="sub">6 skills</div></div>
+              <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+            </div>
+            <div class="profile">
+              <div class="profile-ico">▣</div>
+              <div style="flex:1"><div class="nm">UI Builder</div><div class="sub">5 skills</div></div>
+              <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+            </div>
+            <div class="profile">
+              <div class="profile-ico">🗂</div>
+              <div style="flex:1"><div class="nm">Architecture &amp; Planning</div><div class="sub">5 skills</div></div>
+              <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+            </div>
+            <div class="profile">
+              <div class="profile-ico">$</div>
+              <div style="flex:1"><div class="nm">Cheap Subagent</div><div class="sub">4 skills</div></div>
+              <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+            </div>
+            <div class="profile">
+              <div class="profile-ico">🔬</div>
+              <div style="flex:1"><div class="nm">Research</div><div class="sub">6 skills</div></div>
+              <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+            </div>
+
+            <button type="button" class="btn btn-ghost" style="width:100%;margin-top:var(--space-2)">+ New Profile</button>
+
+            <div class="tip">
+              <strong>Tip</strong><br />
+              Switch profiles to view how rankings change based on what matters most for your use case.
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

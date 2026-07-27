@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Models — Model Directory (reference)</title>
+  <link rel="stylesheet" href="../../packages/ui/src/tokens.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font-family: var(--font-sans);
+      font-size: var(--text-body-size);
+      font-weight: var(--text-body-weight);
+      line-height: var(--text-body-line);
+      color: var(--text);
+      background: var(--bg-app);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    button, input, select { font: inherit; color: inherit; }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: var(--sidebar-width); flex-shrink: 0; background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle); display: flex; flex-direction: column;
+      padding: var(--space-4) var(--space-3); position: sticky; top: 0; height: 100vh;
+    }
+    .brand { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); margin-bottom: var(--space-4); }
+    .brand-mark {
+      width: 28px; height: 28px; border-radius: var(--radius-lg); background: var(--accent);
+      display: grid; place-items: center; font-weight: 700; color: var(--text);
+    }
+    .brand-name { font-size: var(--text-card-size); font-weight: 600; }
+    .nav { display: flex; flex-direction: column; gap: var(--space-1); }
+    .nav a {
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-2) var(--space-3); border-radius: var(--radius-lg); color: var(--text-muted);
+    }
+    .nav a.active { background: var(--accent); color: var(--text); font-weight: 600; }
+    .nav-section {
+      margin-top: var(--space-6); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle);
+      font-size: 10px; letter-spacing: 0.08em; color: var(--text-faint); font-weight: 600;
+      padding-left: var(--space-3); margin-bottom: var(--space-2);
+    }
+    .shortcut {
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-1_5) var(--space-3); border-radius: var(--radius-md);
+      color: var(--text-muted); font-size: var(--text-meta-size);
+    }
+    .logo-tile {
+      width: 18px; height: 18px; border-radius: var(--radius-sm);
+      background: var(--bg-card); border: 1px solid var(--border);
+      display: grid; place-items: center; font-size: 9px; font-weight: 700; color: var(--text-muted); flex-shrink: 0;
+    }
+    .sidebar-foot { margin-top: auto; }
+    .promo {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl);
+      padding: var(--space-4); font-size: var(--text-meta-size); color: var(--text-muted);
+    }
+    .promo strong { display: block; color: var(--text); margin-bottom: var(--space-1); }
+    .promo .btn { margin-top: var(--space-3); width: 100%; }
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg-surface); }
+    .topbar {
+      height: var(--topbar-height); display: flex; align-items: center; gap: var(--space-3);
+      padding: 0 var(--space-6); border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-surface); position: sticky; top: 0; z-index: 30;
+    }
+    .search {
+      flex: 1; max-width: 480px; margin: 0 auto; display: flex; align-items: center; gap: var(--space-2);
+      background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-full);
+      padding: var(--space-2) var(--space-4); color: var(--text-faint); font-size: var(--text-meta-size);
+    }
+    .search .hint {
+      margin-left: auto; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 0 6px; font-size: 10px;
+    }
+    .top-actions { display: flex; align-items: center; gap: var(--space-2); margin-left: auto; }
+    .select-pill, .icon-btn {
+      background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: var(--space-1_5) var(--space-3); color: var(--text-muted); font-size: var(--text-meta-size);
+    }
+    .icon-btn { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1_5);
+      border-radius: var(--radius-md); padding: var(--space-1_5) var(--space-3);
+      border: 1px solid transparent; font-size: var(--text-meta-size); font-weight: 600;
+    }
+    .btn-primary { background: var(--accent); color: var(--text); }
+    .btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .avatar {
+      width: 32px; height: 32px; border-radius: var(--radius-full); background: var(--advanced-bg);
+      border: 1px solid var(--border); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--advanced);
+    }
+    .workspace { display: flex; flex: 1; min-height: 0; }
+    .page { flex: 1; min-width: 0; padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-3); }
+    .page-head { display: flex; align-items: center; justify-content: space-between; }
+    .page-head h1 {
+      margin: 0; font-size: var(--text-page-size); font-weight: var(--text-page-weight); display: inline;
+    }
+    .count { color: var(--text-muted); font-size: var(--text-meta-size); margin-left: var(--space-2); font-weight: 400; }
+    .segment {
+      display: inline-flex; background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 2px; gap: 2px;
+    }
+    .segment span {
+      padding: 6px 12px; border-radius: var(--radius-sm); font-size: var(--text-meta-size);
+      color: var(--text-muted); font-weight: 500;
+    }
+    .segment span.on { background: var(--accent); color: var(--text); font-weight: 600; }
+    .filters {
+      position: sticky; top: var(--topbar-height); z-index: 20;
+      background: var(--bg-surface); padding-bottom: var(--space-2);
+      display: flex; flex-direction: column; gap: var(--space-2);
+    }
+    .filter-row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+    .dd {
+      background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 6px 10px; font-size: var(--text-meta-size); color: var(--text-muted);
+    }
+    .fchip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border);
+      border-radius: var(--radius-md); padding: 4px 8px; font-size: 11px; font-weight: 600;
+    }
+    .fchip .x { color: var(--text-muted); font-weight: 400; }
+    .clear { color: var(--text-muted); font-size: var(--text-meta-size); margin-left: var(--space-1); }
+    .table-wrap {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      overflow: auto; flex: 1;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: var(--text-body-size); }
+    thead th {
+      position: sticky; top: 0; z-index: 5;
+      background: var(--bg-card); color: var(--text-muted); font-weight: 500;
+      font-size: var(--text-meta-size); text-align: left; padding: 0 var(--space-3);
+      height: 40px; border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    tbody td {
+      padding: 0 var(--space-3); height: var(--row-standard);
+      border-bottom: 1px solid var(--border-subtle); white-space: nowrap;
+      vertical-align: middle;
+    }
+    tbody tr:hover td { background: var(--bg-row-hover); }
+    tbody tr.selected td {
+      background: var(--accent-bg);
+    }
+    tbody tr.selected td:first-child {
+      border-left: 3px solid var(--accent);
+      padding-left: calc(var(--space-3) - 3px);
+    }
+    .cell-model { display: flex; align-items: center; gap: var(--space-2); }
+    .cell-model .nm { font-weight: 500; }
+    .star { color: var(--warn); font-size: 12px; }
+    .badge-new {
+      background: var(--info-bg); color: var(--info); font-size: 10px; font-weight: 600;
+      padding: 1px 6px; border-radius: var(--radius-sm);
+    }
+    .chip {
+      display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-md);
+      font-size: 11px; font-weight: 600;
+    }
+    .chip-ok { background: var(--ok-bg); color: var(--ok); }
+    .chip-info { background: var(--info-bg); color: var(--info); }
+    .chip-warn { background: var(--warn-bg); color: var(--warn); }
+    .chip-danger { background: var(--danger-bg); color: var(--danger); }
+    .chip-neutral { background: var(--neutral-bg); color: var(--text-muted); }
+    .chip-advanced { background: var(--advanced-bg); color: var(--advanced); }
+    .chip-fast { background: var(--fast-bg); color: var(--fast); }
+    .speed-fast { color: var(--fast); font-weight: 600; }
+    .speed-ok { color: var(--ok); font-weight: 600; }
+    .speed-med { color: var(--warn); font-weight: 600; }
+    .speed-slow { color: var(--danger); font-weight: 600; }
+    .score-box {
+      display: inline-block; min-width: 34px; text-align: center; padding: 2px 8px;
+      border-radius: var(--radius-sm); font-weight: 600; font-size: 12px; border: 1px solid transparent;
+    }
+    .score-hi { background: var(--score-exceptional-bg); color: var(--score-exceptional); border-color: var(--score-exceptional-bg); }
+    .score-st { background: var(--score-strong-bg); color: var(--score-strong); border-color: var(--score-strong-bg); }
+    .tags { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+    .tag {
+      background: var(--neutral-bg); color: var(--text-muted); font-size: 10px; font-weight: 600;
+      padding: 1px 6px; border-radius: var(--radius-sm);
+    }
+    .tag-plus { color: var(--text-faint); font-size: 10px; }
+    .muted { color: var(--text-muted); }
+    .faint { color: var(--text-faint); }
+    .footer-bar {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-top: 1px solid var(--border); background: var(--bg-card);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg); margin-top: -1px;
+      font-size: var(--text-meta-size); color: var(--text-muted);
+    }
+    .footer-bar .grow { flex: 1; }
+    .pager { display: flex; align-items: center; gap: var(--space-2); }
+    .pager button {
+      width: 28px; height: 28px; border-radius: var(--radius-md);
+      border: 1px solid var(--border); background: var(--bg-input); color: var(--text-muted);
+    }
+    /* Drawer */
+    .drawer {
+      width: var(--drawer-width); flex-shrink: 0;
+      background: var(--bg-drawer); border-left: 1px solid var(--border);
+      box-shadow: var(--shadow-drawer);
+      display: flex; flex-direction: column;
+      position: sticky; top: 0; height: 100vh; overflow: auto;
+    }
+    .drawer-head {
+      display: flex; align-items: flex-start; gap: var(--space-2);
+      padding: var(--space-4); border-bottom: 1px solid var(--border-subtle);
+    }
+    .drawer-head h2 { margin: 0; font-size: 18px; font-weight: 600; flex: 1; }
+    .drawer-body { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); flex: 1; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+    .model-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
+    .tabs {
+      display: flex; gap: var(--space-4); border-bottom: 1px solid var(--border-subtle);
+      font-size: var(--text-meta-size); color: var(--text-muted);
+    }
+    .tabs span { padding-bottom: var(--space-2); cursor: default; }
+    .tabs span.on { color: var(--accent); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+    .section-label { font-size: var(--text-meta-size); font-weight: 600; margin-bottom: var(--space-1); }
+    .section-label.best { color: var(--ok); }
+    .section-label.avoid { color: var(--danger); }
+    .section-label.notes { color: var(--info); }
+    .section-body { color: var(--text-muted); font-size: var(--text-meta-size); line-height: 1.5; }
+    .caps { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-2); }
+    .cap {
+      background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+      padding: var(--space-3) var(--space-2); text-align: center;
+    }
+    .cap-ico {
+      width: 28px; height: 28px; margin: 0 auto var(--space-2);
+      border-radius: var(--radius-md); background: var(--bg-card); border: 1px solid var(--border);
+      display: grid; place-items: center; font-size: 12px; color: var(--text-muted);
+    }
+    .cap-name { font-size: 11px; color: var(--text-muted); }
+    .cap-val { font-size: 11px; font-weight: 600; color: var(--ok); margin-top: 2px; }
+    .rating-row {
+      display: grid; grid-template-columns: 1fr auto auto auto auto; gap: var(--space-2);
+      align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid var(--border-subtle);
+      font-size: var(--text-meta-size);
+    }
+    .drawer-foot {
+      display: flex; gap: var(--space-2); padding: var(--space-4);
+      border-top: 1px solid var(--border-subtle); margin-top: auto;
+    }
+    .drawer-foot .btn { flex: 1; }
+    .drawer-foot .icon-btn { flex: 0; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">◇</div><div class="brand-name">Model Directory</div></div>
+      <nav class="nav">
+        <a href="overview.html">⌂ Overview</a>
+        <a class="active" href="models.html">▣ Models</a>
+        <a href="rankings.html">☰ Rankings</a>
+        <a href="providers.html">⧉ Providers &amp; Plans</a>
+      </nav>
+      <div class="nav-section">SHORTCUTS</div>
+      <a class="shortcut" href="#"><span class="logo-tile">O</span> OpenAI</a>
+      <a class="shortcut" href="#"><span class="logo-tile">A</span> Anthropic</a>
+      <a class="shortcut" href="#"><span class="logo-tile">G</span> Google</a>
+      <a class="shortcut" href="#"><span class="logo-tile">OC</span> OpenCode</a>
+      <a class="shortcut" href="#"><span class="logo-tile">x</span> xAI</a>
+      <a class="shortcut" href="#"><span class="logo-tile">M</span> Mistral</a>
+      <a class="shortcut" href="#"><span class="logo-tile">N</span> NVIDIA</a>
+      <a class="shortcut" href="#"><span class="logo-tile">+</span> View all</a>
+      <div class="nav-section" style="border:0;margin-top:var(--space-4);padding-top:0"></div>
+      <a class="shortcut" href="#">⇪ Import / Export</a>
+      <a class="shortcut" href="#">⚙ Settings</a>
+      <div class="sidebar-foot">
+        <div class="promo">
+          <strong>Keep your directory in sync</strong>
+          Connect providers and auto-discover new models.
+          <button type="button" class="btn btn-ghost">Connect Providers</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="search">⌕ Search models, providers, plans, tags… <span class="hint">⌘ K</span></div>
+        <div class="top-actions">
+          <div class="select-pill">Saved Views ▾</div>
+          <button type="button" class="icon-btn">▤</button>
+          <button type="button" class="btn btn-primary">+ Add Model</button>
+          <button type="button" class="icon-btn">◐</button>
+          <div class="avatar">BP</div>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <div class="page">
+          <div class="page-head">
+            <div><h1>Models</h1><span class="count">51 models</span></div>
+            <div class="segment">
+              <span class="on">▦ Table</span>
+              <span>□ Cards</span>
+              <span>☰ Compact</span>
+            </div>
+          </div>
+
+          <div class="filters">
+            <div class="filter-row">
+              <span class="dd">Access Provider ▾</span>
+              <span class="dd">Status ▾</span>
+              <span class="dd">Access Type ▾</span>
+              <span class="dd">Skill ▾</span>
+              <span class="dd">Tags ▾</span>
+              <span class="dd">Price ▾</span>
+              <span class="dd">Quota ▾</span>
+            </div>
+            <div class="filter-row">
+              <span class="fchip">Status: Active <span class="x">×</span></span>
+              <span class="fchip">Access Type: API <span class="x">×</span></span>
+              <span class="fchip">Skill: Coding <span class="x">×</span></span>
+              <span class="fchip">Price: ≤ $1 / 1M tokens <span class="x">×</span></span>
+              <a class="clear" href="#">Clear all</a>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:36px"><input type="checkbox" aria-label="Select all" /></th>
+                  <th>Model</th>
+                  <th>Creator</th>
+                  <th>Access Provider</th>
+                  <th>Plan</th>
+                  <th>Status</th>
+                  <th>Context</th>
+                  <th>Speed</th>
+                  <th>Overall Score</th>
+                  <th>Best Skill</th>
+                  <th>Cost / Quota</th>
+                  <th>Tags</th>
+                  <th>Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="selected">
+                  <td><input type="checkbox" checked aria-label="Select" /></td>
+                  <td>
+                    <div class="cell-model">
+                      <span class="logo-tile">A</span>
+                      <span class="nm">Claude Sonnet 5</span>
+                      <span class="badge-new">New</span>
+                      <span class="star" title="Favourite">★</span>
+                    </div>
+                  </td>
+                  <td><span class="cell-model"><span class="logo-tile">A</span> Anthropic</span></td>
+                  <td><span class="cell-model"><span class="logo-tile">A</span> Claude API</span></td>
+                  <td class="muted">Pro</td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td>200K</td>
+                  <td class="speed-ok">Fast</td>
+                  <td><span class="score-box score-hi">9.4</span></td>
+                  <td>Coding</td>
+                  <td class="muted">$3 / 1M tok</td>
+                  <td><div class="tags"><span class="tag">Reasoning</span><span class="tag">Coding <span class="tag-plus">+2</span></span></div></td>
+                  <td class="faint">Jul 12</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" aria-label="Select" /></td>
+                  <td><div class="cell-model"><span class="logo-tile">O</span><span class="nm">GPT-5.6 Sol</span></div></td>
+                  <td><span class="cell-model"><span class="logo-tile">O</span> OpenAI</span></td>
+                  <td><span class="cell-model"><span class="logo-tile">O</span> ChatGPT Plus</span></td>
+                  <td class="muted">Plus</td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td>256K</td>
+                  <td class="speed-ok">Fast</td>
+                  <td><span class="score-box score-hi">9.1</span></td>
+                  <td>General</td>
+                  <td class="muted">$20 / mo</td>
+                  <td><div class="tags"><span class="tag">Multimodal</span><span class="tag">General</span></div></td>
+                  <td class="faint">Jul 12</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" aria-label="Select" /></td>
+                  <td><div class="cell-model"><span class="logo-tile">G</span><span class="nm">Gemini 3.5 Flash</span></div></td>
+                  <td><span class="cell-model"><span class="logo-tile">G</span> Google</span></td>
+                  <td><span class="cell-model"><span class="logo-tile">G</span> Gemini Advanced</span></td>
+                  <td class="muted">Advanced</td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td>1M</td>
+                  <td class="speed-med">Medium</td>
+                  <td><span class="score-box score-st">8.7</span></td>
+                  <td>Long Context</td>
+                  <td class="muted">$1.25 / 1M tok</td>
+                  <td><div class="tags"><span class="tag">Long Context</span><span class="tag">Vision</span></div></td>
+                  <td class="faint">Jul 12</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" aria-label="Select" /></td>
+                  <td><div class="cell-model"><span class="logo-tile">OC</span><span class="nm">GLM-5.2</span></div></td>
+                  <td><span class="cell-model"><span class="logo-tile">Z</span> Zhipu</span></td>
+                  <td><span class="cell-model"><span class="logo-tile">OC</span> OpenCode</span></td>
+                  <td class="muted">Go</td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td>128K</td>
+                  <td class="speed-fast">Very Fast</td>
+                  <td><span class="score-box score-st">8.6</span></td>
+                  <td>Coding</td>
+                  <td class="muted">$0.27 / 1M tok</td>
+                  <td><div class="tags"><span class="tag">Coding</span><span class="tag">Reasoning</span></div></td>
+                  <td class="faint">Jul 12</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" aria-label="Select" /></td>
+                  <td><div class="cell-model"><span class="logo-tile">A</span><span class="nm">Claude Opus 4.8</span></div></td>
+                  <td><span class="cell-model"><span class="logo-tile">A</span> Anthropic</span></td>
+                  <td><span class="cell-model"><span class="logo-tile">A</span> Claude API</span></td>
+                  <td class="muted">Pro</td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td>200K</td>
+                  <td class="speed-ok">Fast</td>
+                  <td><span class="score-box score-st">8.5</span></td>
+                  <td>Coding</td>
+                  <td class="muted">$15 / 1M tok</td>
+                  <td><div class="tags"><span class="tag">Coding</span><span class="tag">Reasoning</span></div></td>
+                  <td class="faint">Jul 11</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" aria-label="Select" /></td>
+                  <td><div class="cell-model"><span class="logo-tile">x</span><span class="nm">Grok 4.5</span></div></td>
+                  <td><span class="cell-model"><span class="logo-tile">x</span> xAI</span></td>
+                  <td><span class="cell-model"><span class="logo-tile">x</span> xAI</span></td>
+                  <td class="muted">Premium+</td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td>256K</td>
+                  <td class="speed-med">Medium</td>
+                  <td><span class="score-box score-st">8.0</span></td>
+                  <td>Real-time</td>
+                  <td class="muted">$40 / mo</td>
+                  <td><div class="tags"><span class="tag">Real-time</span><span class="tag">Web</span></div></td>
+                  <td class="faint">Jul 10</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" aria-label="Select" /></td>
+                  <td><div class="cell-model"><span class="logo-tile">OC</span><span class="nm">MiMo-V2.5-Pro</span></div></td>
+                  <td><span class="cell-model"><span class="logo-tile">X</span> Xiaomi</span></td>
+                  <td><span class="cell-model"><span class="logo-tile">OC</span> OpenCode</span></td>
+                  <td class="muted">Go</td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td>128K</td>
+                  <td class="speed-fast">Very Fast</td>
+                  <td><span class="score-box score-st">7.8</span></td>
+                  <td>Coding</td>
+                  <td class="muted">$0.14 / 1M tok</td>
+                  <td><div class="tags"><span class="tag">Open Weights</span><span class="tag">Coding</span></div></td>
+                  <td class="faint">Jul 10</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" aria-label="Select" /></td>
+                  <td><div class="cell-model"><span class="logo-tile">M</span><span class="nm">Mistral Large 3</span></div></td>
+                  <td><span class="cell-model"><span class="logo-tile">M</span> Mistral AI</span></td>
+                  <td><span class="cell-model"><span class="logo-tile">M</span> Mistral API</span></td>
+                  <td class="muted">Enterprise</td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td>128K</td>
+                  <td class="speed-ok">Fast</td>
+                  <td><span class="score-box score-st">7.6</span></td>
+                  <td>General</td>
+                  <td class="muted">$0.8 / 1M tok</td>
+                  <td><div class="tags"><span class="tag">Efficient</span><span class="tag">General</span></div></td>
+                  <td class="faint">Jul 10</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" aria-label="Select" /></td>
+                  <td><div class="cell-model"><span class="logo-tile">OC</span><span class="nm">DeepSeek V4 Pro</span></div></td>
+                  <td><span class="cell-model"><span class="logo-tile">D</span> DeepSeek</span></td>
+                  <td><span class="cell-model"><span class="logo-tile">OC</span> OpenCode</span></td>
+                  <td class="muted">Go</td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td>128K</td>
+                  <td class="speed-ok">Fast</td>
+                  <td><span class="score-box score-st">7.4</span></td>
+                  <td>Reasoning</td>
+                  <td class="muted">$0.27 / 1M tok</td>
+                  <td><div class="tags"><span class="tag">Reasoning</span><span class="tag">Coding</span></div></td>
+                  <td class="faint">Jul 9</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" aria-label="Select" /></td>
+                  <td><div class="cell-model"><span class="logo-tile">O</span><span class="nm">GPT-5.6 Luna</span></div></td>
+                  <td><span class="cell-model"><span class="logo-tile">O</span> OpenAI</span></td>
+                  <td><span class="cell-model"><span class="logo-tile">O</span> ChatGPT Plus</span></td>
+                  <td class="muted">Plus</td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td>128K</td>
+                  <td class="speed-fast">Very Fast</td>
+                  <td><span class="score-box score-st">7.2</span></td>
+                  <td>Efficiency</td>
+                  <td class="muted">$20 / mo</td>
+                  <td><div class="tags"><span class="tag">Efficient</span><span class="tag">Small</span></div></td>
+                  <td class="faint">Jul 9</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="footer-bar">
+              <span>0 selected</span>
+              <span class="faint">Select up to 20 models to compare</span>
+              <span class="grow"></span>
+              <span>Rows per page</span>
+              <span class="dd">20 ▾</span>
+              <span>1–20 of 51</span>
+              <div class="pager">
+                <button type="button" aria-label="Prev">‹</button>
+                <button type="button" aria-label="Next">›</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="drawer" aria-label="Model details">
+          <div class="drawer-head">
+            <h2>Claude Sonnet 5 <span class="badge-new">New</span></h2>
+            <button type="button" class="icon-btn" aria-label="Favourite" style="color:var(--warn)">★</button>
+            <button type="button" class="icon-btn" aria-label="More">⋮</button>
+            <button type="button" class="icon-btn" aria-label="Close">✕</button>
+          </div>
+          <div class="drawer-body">
+            <div class="meta-row">
+              <span class="chip chip-neutral">Anthropic</span>
+              <span class="model-id">Model ID: claude-sonnet-5</span>
+            </div>
+            <div class="meta-row">
+              <span class="chip chip-ok">Active</span>
+              <span class="chip chip-info">Flagship</span>
+            </div>
+            <div class="tabs">
+              <span class="on">Overview</span>
+              <span>Access &amp; Cost</span>
+              <span>Rankings</span>
+              <span>Specifications</span>
+              <span>Research</span>
+            </div>
+            <div>
+              <div class="section-label best">Best for</div>
+              <div class="section-body">Complex reasoning, coding, content creation, analysis, and multi-step tasks.</div>
+            </div>
+            <div>
+              <div class="section-label avoid">Avoid for</div>
+              <div class="section-body">Very long documents (use 1M+ context models), real-time data.</div>
+            </div>
+            <div>
+              <div class="section-label notes">Personal notes</div>
+              <div class="section-body">Excellent at code and reasoning. My go-to for most serious work.</div>
+            </div>
+            <div>
+              <div class="section-label" style="color:var(--text)">Key Capabilities</div>
+              <div class="caps">
+                <div class="cap"><div class="cap-ico">⬡</div><div class="cap-name">Reasoning</div><div class="cap-val">Excellent</div></div>
+                <div class="cap"><div class="cap-ico">◎</div><div class="cap-name">Vision</div><div class="cap-val">Yes</div></div>
+                <div class="cap"><div class="cap-ico">⚒</div><div class="cap-name">Tool Use</div><div class="cap-val">Yes</div></div>
+                <div class="cap"><div class="cap-ico">✦</div><div class="cap-name">Multimodal</div><div class="cap-val">Yes</div></div>
+                <div class="cap"><div class="cap-ico">⚑</div><div class="cap-name">Agents</div><div class="cap-val">Yes</div></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-2)">
+                <div class="section-label" style="color:var(--text);margin:0">Personal Ratings (My Rankings)</div>
+                <a class="clear" href="#" style="color:var(--accent)">View all skills ›</a>
+              </div>
+              <div class="rating-row">
+                <span>Coding</span>
+                <span class="score-box score-hi">9.6</span>
+                <span class="chip chip-ok">High</span>
+                <span class="faint">2 of 11</span>
+                <span class="faint">7th</span>
+              </div>
+              <div class="rating-row">
+                <span>General Capability</span>
+                <span class="score-box score-hi">9.4</span>
+                <span class="chip chip-ok">High</span>
+                <span class="faint">3 of 11</span>
+                <span class="faint">7th</span>
+              </div>
+              <div class="rating-row">
+                <span>Reasoning</span>
+                <span class="score-box score-hi">9.5</span>
+                <span class="chip chip-ok">High</span>
+                <span class="faint">2 of 11</span>
+                <span class="faint">7th</span>
+              </div>
+            </div>
+          </div>
+          <div class="drawer-foot">
+            <button type="button" class="btn btn-ghost">⇄ Compare</button>
+            <button type="button" class="btn btn-ghost">✎ Edit Model</button>
+            <button type="button" class="icon-btn" aria-label="More">⋮</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

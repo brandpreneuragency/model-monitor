@@ -175,3 +175,39 @@ git -C "$REPO_DIR" checkout -- AGENTS.md progress.md
 git -C "$REPO_DIR" checkout -- . && PATH="$HOME/.local/bin:$PATH" pnpm install
 ```
 
+### design-tokens (2026-07-27T22:20Z) — RESULT=PASS
+
+#### Built
+- `packages/ui/src/tokens.css` — full dark-only token set from SPEC §7.1 (surfaces, borders,
+  text, accent, seven semantic colours with paired `*-bg`, score bands, chart series,
+  `--shadow-drawer`, radii 4/6/8/12, spacing 2–48, type scale, row heights 52/44/36).
+- `docs/design/DESIGN.md` — token usage map, SPEC §7.2 component rules, density definitions,
+  forbidden patterns (raw hex, gradients, glows, non-drawer shadows, layout animation).
+- Static reference screens (token-only CSS, link to `../../packages/ui/src/tokens.css`):
+  - `docs/design/overview.html`
+  - `docs/design/models.html` (table + open drawer)
+  - `docs/design/rankings.html` (personal scores untested; separate external column)
+  - `docs/design/providers.html`
+
+#### Vision
+- `VISION=USED` — opened all four plan screenshots via vision tool and built from them
+  plus the written anatomy. Seed content uses real directory models/providers/quotas.
+
+#### Verified
+- Raw hex/rgb/hsl grep on the four HTML files: empty.
+- All hex in `tokens.css` confined to the single `:root` block.
+- No gradients / glows / extra shadows in mockups.
+- Machine gate precheck: all six files non-empty, `bg-app` present, evidence RESULT=PASS.
+
+#### Conflicts / notes
+- Screenshots show filled personal scores; product rule D13 + phase anatomy require
+  untested personal cells in the rankings reference — HTML follows D13 (HTML is the
+  gateable contract). Logged for later UI phases.
+
+#### Rollback
+```
+rm -rf "$REPO_DIR/docs/design"
+rm -f "$REPO_DIR/packages/ui/src/tokens.css"
+# revert this progress.md entry if abandoning the phase
+```
+

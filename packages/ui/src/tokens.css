@@ -1,0 +1,143 @@
+/*
+ * Model Directory design tokens — sole colour definition site.
+ * Source: SPEC.md §7.1 (2026-07-27). Dark only; no light block.
+ * No component may use a raw hex, gradient, or glow outside this file.
+ */
+
+:root {
+  /* ── Surfaces ─────────────────────────────────────────────── */
+  --bg-app: #08080b; /* application background, near-black */
+  --bg-sidebar: #0c0c10;
+  --bg-surface: #0b0b0f; /* main content surface */
+  --bg-card: #131318; /* elevated card */
+  --bg-card-hover: #17171e;
+  --bg-input: #121217;
+  --bg-drawer: #0e0e14;
+  --bg-overlay: rgba(0, 0, 0, 0.45);
+  --bg-row-hover: rgba(255, 255, 255, 0.02);
+  --bg-row-selected: var(--accent-bg);
+
+  /* ── Borders ──────────────────────────────────────────────── */
+  --border: #23232b; /* default border */
+  --border-subtle: #1a1a21;
+  --border-strong: #2e2e38;
+
+  /* ── Text ─────────────────────────────────────────────────── */
+  --text: #e9e9ee; /* primary */
+  --text-muted: #9a9aa6; /* secondary / metadata */
+  --text-faint: #6a6a76; /* tertiary */
+  --text-inverse: #08080b;
+
+  /* ── Accent (indigo) ──────────────────────────────────────── */
+  --accent: #6366f1;
+  --accent-hover: #7679f3;
+  --accent-bg: rgba(99, 102, 241, 0.12); /* selected state */
+  --accent-border: rgba(99, 102, 241, 0.35);
+
+  /* ── Semantic colours (always pair with text; never colour-only) */
+  --ok: #34d399; /* active, available */
+  --ok-bg: rgba(52, 211, 153, 0.12);
+  --info: #818cf8; /* preferred, flagship */
+  --info-bg: rgba(129, 140, 248, 0.12);
+  --fast: #22d3ee; /* fast, efficient */
+  --fast-bg: rgba(34, 211, 238, 0.12);
+  --advanced: #a78bfa; /* reasoning, advanced */
+  --advanced-bg: rgba(167, 139, 250, 0.12);
+  --warn: #fbbf24; /* preview, limited, review */
+  --warn-bg: rgba(251, 191, 36, 0.12);
+  --danger: #f87171; /* deprecated, error */
+  --danger-bg: rgba(248, 113, 113, 0.12);
+  --neutral: #6b7280; /* legacy, unknown */
+  --neutral-bg: rgba(107, 114, 128, 0.12);
+
+  /* ── Score bands (heatmap / score boxes) ──────────────────── */
+  --score-exceptional: #a78bfa; /* 9–10 */
+  --score-exceptional-bg: rgba(167, 139, 250, 0.22);
+  --score-strong: #34d399; /* 7–8 */
+  --score-strong-bg: rgba(52, 211, 153, 0.18);
+  --score-average: #a3a34a; /* 5–6 */
+  --score-average-bg: rgba(163, 163, 74, 0.18);
+  --score-below: #d4a017; /* 3–4 */
+  --score-below-bg: rgba(212, 160, 23, 0.18);
+  --score-weak: #c084a0; /* 0–2 */
+  --score-weak-bg: rgba(192, 132, 160, 0.18);
+  --score-empty: var(--text-faint);
+  --score-empty-bg: rgba(106, 106, 118, 0.12);
+
+  /* ── Chart series (sparklines / multi-series) ─────────────── */
+  --chart-1: #818cf8;
+  --chart-2: #22d3ee;
+  --chart-3: #34d399;
+  --chart-4: #fbbf24;
+  --chart-5: #a78bfa;
+  --chart-6: #f87171;
+  --chart-grid: rgba(233, 233, 238, 0.06);
+  --chart-axis: var(--text-faint);
+
+  /* ── Shadow (drawer + popovers only) ──────────────────────── */
+  --shadow-drawer: 0 0 0 1px rgba(35, 35, 43, 0.9), 0 16px 48px rgba(0, 0, 0, 0.55);
+
+  /* ── Radii ────────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* ── Spacing scale ────────────────────────────────────────── */
+  --space-0_5: 2px;
+  --space-1: 4px;
+  --space-1_5: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* ── Type scale ───────────────────────────────────────────── */
+  --font-sans: "Geist", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  --text-page-size: 24px;
+  --text-page-weight: 600;
+  --text-page-line: 1.25;
+
+  --text-section-size: 15px;
+  --text-section-weight: 600;
+  --text-section-line: 1.35;
+
+  --text-card-size: 13px;
+  --text-card-weight: 600;
+  --text-card-line: 1.35;
+
+  --text-body-size: 13px;
+  --text-body-weight: 400;
+  --text-body-line: 1.45;
+
+  --text-meta-size: 12px;
+  --text-meta-weight: 400;
+  --text-meta-line: 1.4;
+
+  --text-stat-size: 28px;
+  --text-stat-weight: 600;
+  --text-stat-line: 1.1;
+
+  /* ── Density / row heights ────────────────────────────────── */
+  --row-comfortable: 52px;
+  --row-standard: 44px;
+  --row-compact: 36px;
+
+  /* ── Layout chrome ────────────────────────────────────────── */
+  --sidebar-width: 220px;
+  --topbar-height: 56px;
+  --drawer-width: 400px;
+  --rail-width: 300px;
+
+  /* ── Motion ───────────────────────────────────────────────── */
+  --ease-out: ease-out;
+  --duration-fast: 120ms;
+
+  /* ── Focus ring ───────────────────────────────────────────── */
+  --focus-ring: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--accent-border);
+}

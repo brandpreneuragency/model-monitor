@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Overview — Model Directory (reference)</title>
+  <link rel="stylesheet" href="../../packages/ui/src/tokens.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font-family: var(--font-sans);
+      font-size: var(--text-body-size);
+      font-weight: var(--text-body-weight);
+      line-height: var(--text-body-line);
+      color: var(--text);
+      background: var(--bg-app);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    button, input, select { font: inherit; color: inherit; }
+    .app { display: flex; min-height: 100vh; }
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-width);
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle);
+      display: flex; flex-direction: column;
+      padding: var(--space-4) var(--space-3);
+      position: sticky; top: 0; height: 100vh;
+    }
+    .brand { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); margin-bottom: var(--space-4); }
+    .brand-mark {
+      width: 28px; height: 28px; border-radius: var(--radius-lg);
+      background: var(--accent); display: grid; place-items: center;
+      font-size: 14px; font-weight: 700; color: var(--text);
+    }
+    .brand-name { font-size: var(--text-card-size); font-weight: 600; }
+    .nav { display: flex; flex-direction: column; gap: var(--space-1); }
+    .nav a {
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-lg); color: var(--text-muted);
+      transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+    }
+    .nav a:hover { color: var(--text); background: var(--bg-row-hover); }
+    .nav a.active { background: var(--accent); color: var(--text); font-weight: 600; }
+    .nav-ico { width: 16px; opacity: 0.9; }
+    .nav-section {
+      margin-top: var(--space-6); padding-top: var(--space-3);
+      border-top: 1px solid var(--border-subtle);
+      font-size: 10px; letter-spacing: 0.08em; color: var(--text-faint);
+      font-weight: 600; padding-left: var(--space-3); margin-bottom: var(--space-2);
+    }
+    .shortcut {
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-1_5) var(--space-3); border-radius: var(--radius-md);
+      color: var(--text-muted); font-size: var(--text-meta-size);
+    }
+    .shortcut:hover { background: var(--bg-row-hover); color: var(--text); }
+    .logo-tile {
+      width: 18px; height: 18px; border-radius: var(--radius-sm);
+      background: var(--bg-card); border: 1px solid var(--border);
+      display: grid; place-items: center; font-size: 9px; font-weight: 700; color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .sidebar-foot { margin-top: auto; padding-top: var(--space-4); }
+    .promo {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-xl); padding: var(--space-4);
+      font-size: var(--text-meta-size); color: var(--text-muted);
+    }
+    .promo strong { display: block; color: var(--text); margin-bottom: var(--space-1); font-size: var(--text-card-size); }
+    .promo .btn { margin-top: var(--space-3); width: 100%; }
+    /* Main column */
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg-surface); }
+    .topbar {
+      height: var(--topbar-height); display: flex; align-items: center; gap: var(--space-3);
+      padding: 0 var(--space-6); border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-surface); position: sticky; top: 0; z-index: 20;
+    }
+    .search {
+      flex: 1; max-width: 480px; margin: 0 auto;
+      display: flex; align-items: center; gap: var(--space-2);
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: var(--radius-full); padding: var(--space-2) var(--space-4);
+      color: var(--text-faint); font-size: var(--text-meta-size);
+    }
+    .search span.hint {
+      margin-left: auto; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 0 6px; font-size: 10px; color: var(--text-faint);
+    }
+    .top-actions { display: flex; align-items: center; gap: var(--space-2); margin-left: auto; }
+    .select-pill, .icon-btn {
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: var(--space-1_5) var(--space-3);
+      color: var(--text-muted); font-size: var(--text-meta-size);
+    }
+    .icon-btn { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1_5);
+      border-radius: var(--radius-md); padding: var(--space-1_5) var(--space-3);
+      border: 1px solid transparent; font-size: var(--text-meta-size); font-weight: 600;
+      cursor: default; transition: background-color var(--duration-fast) var(--ease-out);
+    }
+    .btn-primary { background: var(--accent); color: var(--text); }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .btn-ghost:hover { background: var(--bg-card-hover); color: var(--text); }
+    .avatar {
+      width: 32px; height: 32px; border-radius: var(--radius-full);
+      background: var(--advanced-bg); border: 1px solid var(--border);
+      display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--advanced);
+    }
+    .content {
+      display: grid;
+      grid-template-columns: 1fr var(--rail-width);
+      gap: var(--space-4);
+      padding: var(--space-6);
+      align-items: start;
+    }
+    .page-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: var(--space-4); grid-column: 1 / -1;
+    }
+    .page-head h1 {
+      margin: 0; font-size: var(--text-page-size); font-weight: var(--text-page-weight);
+      line-height: var(--text-page-line);
+    }
+    .page-head p { margin: var(--space-1) 0 0; color: var(--text-muted); font-size: var(--text-meta-size); }
+    .page-head-actions { display: flex; gap: var(--space-2); }
+    .col-main { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+    .col-rail { display: flex; flex-direction: column; gap: var(--space-4); position: sticky; top: calc(var(--topbar-height) + var(--space-4)); }
+    /* Cards */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: var(--space-4);
+    }
+    .card-h {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: var(--space-3);
+    }
+    .card-h h2 {
+      margin: 0; font-size: var(--text-section-size); font-weight: var(--text-section-weight);
+    }
+    .link-muted { color: var(--text-muted); font-size: var(--text-meta-size); }
+    .link-muted:hover { color: var(--accent); }
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); }
+    .kpi {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: var(--space-4); position: relative; overflow: hidden;
+    }
+    .kpi-ico {
+      width: 32px; height: 32px; border-radius: var(--radius-lg);
+      display: grid; place-items: center; font-size: 14px; margin-bottom: var(--space-3);
+      border: 1px solid var(--border);
+    }
+    .kpi-ico.c1 { background: var(--info-bg); color: var(--info); }
+    .kpi-ico.c2 { background: var(--fast-bg); color: var(--fast); }
+    .kpi-ico.c3 { background: var(--ok-bg); color: var(--ok); }
+    .kpi-ico.c4 { background: var(--warn-bg); color: var(--warn); }
+    .kpi-label { font-size: var(--text-meta-size); color: var(--text-muted); }
+    .kpi-value {
+      font-size: var(--text-stat-size); font-weight: var(--text-stat-weight);
+      line-height: var(--text-stat-line); margin: var(--space-1) 0;
+    }
+    .kpi-sub { font-size: var(--text-meta-size); color: var(--text-faint); }
+    .kpi-sub.up { color: var(--ok); }
+    .spark { display: block; width: 100%; height: 36px; margin-top: var(--space-3); }
+    /* Two column band */
+    .band-2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: var(--space-3); }
+    .mini-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+    .mini-card {
+      background: var(--bg-input); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg); padding: var(--space-3);
+      display: flex; flex-direction: column; gap: var(--space-1);
+    }
+    .mini-card .row { display: flex; align-items: center; gap: var(--space-2); }
+    .mini-card .name { font-size: var(--text-card-size); font-weight: 600; }
+    .mini-card .meta { font-size: var(--text-meta-size); color: var(--text-muted); }
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: var(--radius-md);
+      font-size: 11px; font-weight: 600; border: 1px solid transparent;
+    }
+    .chip-ok { background: var(--ok-bg); color: var(--ok); }
+    .chip-info { background: var(--info-bg); color: var(--info); }
+    .chip-warn { background: var(--warn-bg); color: var(--warn); }
+    .chip-danger { background: var(--danger-bg); color: var(--danger); }
+    .chip-neutral { background: var(--neutral-bg); color: var(--text-muted); }
+    .chip-advanced { background: var(--advanced-bg); color: var(--advanced); }
+    .chip-fast { background: var(--fast-bg); color: var(--fast); }
+    .chip-accent { background: var(--accent-bg); color: var(--accent); }
+    .skill-chips { display: flex; flex-wrap: wrap; gap: var(--space-1_5); margin-bottom: var(--space-3); }
+    .skill-chip {
+      padding: 4px 10px; border-radius: var(--radius-full);
+      background: var(--bg-input); border: 1px solid var(--border);
+      color: var(--text-muted); font-size: 11px; font-weight: 500;
+    }
+    .skill-chip.on { background: var(--accent); border-color: var(--accent); color: var(--text); }
+    .top3 { display: flex; gap: var(--space-4); }
+    .top3-list { flex: 1; display: flex; flex-direction: column; gap: var(--space-2); }
+    .top3-row {
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-2); border-radius: var(--radius-md);
+    }
+    .rank-n {
+      width: 22px; height: 22px; border-radius: var(--radius-full);
+      display: grid; place-items: center; font-size: 11px; font-weight: 700;
+      background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border);
+    }
+    .rank-n.g { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+    .rank-n.s { background: var(--neutral-bg); color: var(--text-muted); }
+    .rank-n.b { background: var(--warn-bg); color: var(--warn); opacity: 0.85; }
+    .score-box {
+      margin-left: auto; min-width: 36px; text-align: center;
+      padding: 2px 8px; border-radius: var(--radius-sm);
+      font-weight: 600; font-size: 12px;
+      border: 1px solid var(--border);
+    }
+    .score-hi { background: var(--score-exceptional-bg); color: var(--score-exceptional); border-color: var(--score-exceptional-bg); }
+    .score-md { background: var(--score-strong-bg); color: var(--score-strong); border-color: var(--score-strong-bg); }
+    .radar-wrap { width: 140px; height: 140px; flex-shrink: 0; }
+    /* Bottom charts */
+    .charts-3 { display: grid; grid-template-columns: 0.9fr 1.2fr 0.9fr; gap: var(--space-3); }
+    .bar-row {
+      display: grid; grid-template-columns: 72px 1fr 28px; align-items: center;
+      gap: var(--space-2); margin-bottom: var(--space-2); font-size: var(--text-meta-size);
+    }
+    .bar-row .lbl { color: var(--text-muted); }
+    .bar-row .cnt { text-align: right; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .bar-track {
+      height: 8px; background: var(--bg-input); border-radius: var(--radius-full); overflow: hidden;
+    }
+    .bar-fill { height: 100%; border-radius: var(--radius-full); background: var(--accent); }
+    .scatter { width: 100%; height: 180px; }
+    .axis-note { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-faint); margin-top: var(--space-1); font-variant-numeric: tabular-nums; }
+    .upd-list { display: flex; flex-direction: column; gap: var(--space-2); }
+    .upd-row {
+      display: grid; grid-template-columns: 22px 1fr auto; gap: var(--space-2);
+      align-items: start; font-size: var(--text-meta-size);
+    }
+    .upd-row .t { color: var(--text); font-weight: 500; }
+    .upd-row .d { color: var(--text-muted); }
+    .upd-row .when { color: var(--text-faint); white-space: nowrap; }
+    /* Quota rail */
+    .quota-row { margin-bottom: var(--space-4); }
+    .quota-row:last-child { margin-bottom: 0; }
+    .quota-top { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1_5); }
+    .quota-top .name { font-size: var(--text-card-size); font-weight: 600; flex: 1; }
+    .quota-top .vals { font-size: var(--text-meta-size); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .quota-sub { font-size: 11px; color: var(--text-faint); margin-bottom: var(--space-1_5); }
+    .qbar { height: 6px; background: var(--bg-input); border-radius: var(--radius-full); overflow: hidden; }
+    .qbar > i { display: block; height: 100%; border-radius: var(--radius-full); }
+    .pct { font-size: 11px; color: var(--text-faint); text-align: right; margin-top: 4px; }
+    .inf { font-size: 14px; color: var(--advanced); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">◇</div><div class="brand-name">Model Directory</div></div>
+      <nav class="nav">
+        <a class="active" href="overview.html"><span class="nav-ico">⌂</span> Overview</a>
+        <a href="models.html"><span class="nav-ico">▣</span> Models</a>
+        <a href="rankings.html"><span class="nav-ico">☰</span> Rankings</a>
+        <a href="providers.html"><span class="nav-ico">⧉</span> Providers &amp; Plans</a>
+      </nav>
+      <div class="nav-section">SHORTCUTS</div>
+      <a class="shortcut" href="#"><span class="logo-tile">O</span> OpenAI</a>
+      <a class="shortcut" href="#"><span class="logo-tile">A</span> Anthropic</a>
+      <a class="shortcut" href="#"><span class="logo-tile">G</span> Google</a>
+      <a class="shortcut" href="#"><span class="logo-tile">OC</span> OpenCode</a>
+      <a class="shortcut" href="#"><span class="logo-tile">x</span> xAI</a>
+      <a class="shortcut" href="#"><span class="logo-tile">M</span> Mistral</a>
+      <a class="shortcut" href="#"><span class="logo-tile">N</span> NVIDIA</a>
+      <a class="shortcut" href="#"><span class="logo-tile">+</span> View all</a>
+      <div class="nav-section" style="border:0;margin-top:var(--space-4);padding-top:0"></div>
+      <a class="shortcut" href="#"><span class="nav-ico">⇪</span> Import / Export</a>
+      <a class="shortcut" href="#"><span class="nav-ico">⚙</span> Settings</a>
+      <div class="sidebar-foot">
+        <div class="promo">
+          <strong>Your rankings drive smarter choices</strong>
+          Rank models across skills that matter to you. Scores stay private to your profile.
+          <button type="button" class="btn btn-ghost">Learn more</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="search">⌕ Search models, providers, plans, tags… <span class="hint">⌘ K</span></div>
+        <div class="top-actions">
+          <div class="select-pill">My Active View ▾</div>
+          <button type="button" class="icon-btn" aria-label="Filters">▤</button>
+          <button type="button" class="btn btn-primary">+ Add Model</button>
+          <button type="button" class="icon-btn" aria-label="Theme">◐</button>
+          <div class="avatar">BP</div>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="page-head">
+          <div>
+            <h1>Overview</h1>
+            <p>Your AI model directory at a glance</p>
+          </div>
+          <div class="page-head-actions">
+            <button type="button" class="btn btn-ghost">+ Add Model</button>
+            <button type="button" class="btn btn-ghost">+ Add Provider</button>
+          </div>
+        </div>
+
+        <div class="col-main">
+          <div class="kpi-row">
+            <div class="kpi">
+              <div class="kpi-ico c1">◈</div>
+              <div class="kpi-label">Active Models</div>
+              <div class="kpi-value">51</div>
+              <div class="kpi-sub up">+3 this month</div>
+              <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none" aria-hidden="true">
+                <polyline fill="none" stroke="var(--chart-1)" stroke-width="2" points="0,28 20,26 40,24 60,22 80,20 100,18 120,16 140,14 160,12 180,10 200,8" />
+                <polygon fill="var(--info-bg)" points="0,36 0,28 20,26 40,24 60,22 80,20 100,18 120,16 140,14 160,12 180,10 200,8 200,36" />
+              </svg>
+            </div>
+            <div class="kpi">
+              <div class="kpi-ico c2">▣</div>
+              <div class="kpi-label">Providers</div>
+              <div class="kpi-value">9</div>
+              <div class="kpi-sub">7 active</div>
+              <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none" aria-hidden="true">
+                <polyline fill="none" stroke="var(--chart-2)" stroke-width="2" points="0,30 30,28 60,26 90,22 120,20 150,14 180,10 200,6" />
+                <polygon fill="var(--fast-bg)" points="0,36 0,30 30,28 60,26 90,22 120,20 150,14 180,10 200,6 200,36" />
+              </svg>
+            </div>
+            <div class="kpi">
+              <div class="kpi-ico c3">$</div>
+              <div class="kpi-label">Paid Plans</div>
+              <div class="kpi-value">11</div>
+              <div class="kpi-sub">$132 / month</div>
+              <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none" aria-hidden="true">
+                <polyline fill="none" stroke="var(--chart-3)" stroke-width="2" points="0,24 40,22 80,20 120,16 160,12 200,8" />
+                <polygon fill="var(--ok-bg)" points="0,36 0,24 40,22 80,20 120,16 160,12 200,8 200,36" />
+              </svg>
+            </div>
+            <div class="kpi">
+              <div class="kpi-ico c4">!</div>
+              <div class="kpi-label">Needs Review</div>
+              <div class="kpi-value">6</div>
+              <div class="kpi-sub">Models</div>
+              <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none" aria-hidden="true">
+                <polyline fill="none" stroke="var(--chart-4)" stroke-width="2" points="0,20 40,22 80,18 120,24 160,16 200,14" />
+                <polygon fill="var(--warn-bg)" points="0,36 0,20 40,22 80,18 120,24 160,16 200,14 200,36" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="band-2">
+            <section class="card">
+              <div class="card-h"><h2>My Access Overview</h2></div>
+              <div class="mini-grid">
+                <div class="mini-card">
+                  <div class="row"><span class="logo-tile" style="width:22px;height:22px">OC</span><span class="name">OpenCode Go</span></div>
+                  <div class="meta">13 models</div>
+                  <div class="meta">$10 / month</div>
+                  <div class="meta">5-hr window</div>
+                  <span class="chip chip-ok" style="align-self:flex-start;margin-top:var(--space-1)">Active</span>
+                </div>
+                <div class="mini-card">
+                  <div class="row"><span class="logo-tile" style="width:22px;height:22px">A</span><span class="name">Claude API</span></div>
+                  <div class="meta">8 models</div>
+                  <div class="meta">$20 / month</div>
+                  <div class="meta">Monthly</div>
+                  <span class="chip chip-ok" style="align-self:flex-start;margin-top:var(--space-1)">Active</span>
+                </div>
+                <div class="mini-card">
+                  <div class="row"><span class="logo-tile" style="width:22px;height:22px">O</span><span class="name">ChatGPT Plus</span></div>
+                  <div class="meta">5 models</div>
+                  <div class="meta">$20 / month</div>
+                  <div class="meta">Monthly</div>
+                  <span class="chip chip-ok" style="align-self:flex-start;margin-top:var(--space-1)">Active</span>
+                </div>
+                <div class="mini-card">
+                  <div class="row"><span class="logo-tile" style="width:22px;height:22px">G</span><span class="name">Gemini Advanced</span></div>
+                  <div class="meta">7 models</div>
+                  <div class="meta">$19.99 / month</div>
+                  <div class="meta">Monthly</div>
+                  <span class="chip chip-ok" style="align-self:flex-start;margin-top:var(--space-1)">Active</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-h">
+                <h2>Skill Leaders (Top 3)</h2>
+                <a class="link-muted" href="rankings.html">View all rankings ›</a>
+              </div>
+              <div class="skill-chips">
+                <span class="skill-chip on">Best Overall</span>
+                <span class="skill-chip">Coding</span>
+                <span class="skill-chip">UI / Frontend</span>
+                <span class="skill-chip">Architecture</span>
+                <span class="skill-chip">Review / Debug</span>
+                <span class="skill-chip">Agent Work</span>
+              </div>
+              <div class="top3">
+                <div class="top3-list">
+                  <div class="top3-row">
+                    <span class="rank-n g">1</span>
+                    <span class="logo-tile">A</span>
+                    <span>Claude Sonnet 5</span>
+                    <span class="chip chip-info" style="font-size:10px">New</span>
+                    <span class="score-box score-hi">9.4</span>
+                  </div>
+                  <div class="top3-row">
+                    <span class="rank-n s">2</span>
+                    <span class="logo-tile">O</span>
+                    <span>GPT-5.6 Sol</span>
+                    <span class="score-box score-hi">9.1</span>
+                  </div>
+                  <div class="top3-row">
+                    <span class="rank-n b">3</span>
+                    <span class="logo-tile">G</span>
+                    <span>Gemini 3.5 Flash</span>
+                    <span class="score-box score-md">8.7</span>
+                  </div>
+                </div>
+                <div class="radar-wrap" aria-label="Skill radar">
+                  <svg viewBox="0 0 120 120" width="140" height="140">
+                    <polygon fill="none" stroke="var(--chart-grid)" stroke-width="1" points="60,10 105,40 90,95 30,95 15,40" />
+                    <polygon fill="none" stroke="var(--chart-grid)" stroke-width="1" points="60,25 90,45 80,80 40,80 30,45" />
+                    <polygon fill="none" stroke="var(--chart-grid)" stroke-width="1" points="60,40 75,50 70,70 50,70 45,50" />
+                    <line x1="60" y1="60" x2="60" y2="10" stroke="var(--chart-grid)" />
+                    <line x1="60" y1="60" x2="105" y2="40" stroke="var(--chart-grid)" />
+                    <line x1="60" y1="60" x2="90" y2="95" stroke="var(--chart-grid)" />
+                    <line x1="60" y1="60" x2="30" y2="95" stroke="var(--chart-grid)" />
+                    <line x1="60" y1="60" x2="15" y2="40" stroke="var(--chart-grid)" />
+                    <polygon fill="var(--accent-bg)" stroke="var(--accent)" stroke-width="1.5" points="60,18 95,42 82,88 38,90 22,44" />
+                    <text x="60" y="8" text-anchor="middle" fill="var(--text-faint)" font-size="7">Coding</text>
+                    <text x="110" y="42" fill="var(--text-faint)" font-size="7">Reasoning</text>
+                    <text x="92" y="108" fill="var(--text-faint)" font-size="7">Speed</text>
+                    <text x="28" y="108" text-anchor="middle" fill="var(--text-faint)" font-size="7">Value</text>
+                    <text x="8" y="42" fill="var(--text-faint)" font-size="7">Context</text>
+                  </svg>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="charts-3">
+            <section class="card">
+              <div class="card-h"><h2>Models by Provider</h2><a class="link-muted" href="#">View all</a></div>
+              <div class="bar-row"><span class="lbl">OpenCode</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--chart-1)"></div></div><span class="cnt">13</span></div>
+              <div class="bar-row"><span class="lbl">Anthropic</span><div class="bar-track"><div class="bar-fill" style="width:62%;background:var(--chart-2)"></div></div><span class="cnt">8</span></div>
+              <div class="bar-row"><span class="lbl">OpenAI</span><div class="bar-track"><div class="bar-fill" style="width:54%;background:var(--chart-3)"></div></div><span class="cnt">7</span></div>
+              <div class="bar-row"><span class="lbl">Google</span><div class="bar-track"><div class="bar-fill" style="width:46%;background:var(--chart-5)"></div></div><span class="cnt">6</span></div>
+              <div class="bar-row"><span class="lbl">xAI</span><div class="bar-track"><div class="bar-fill" style="width:31%;background:var(--chart-4)"></div></div><span class="cnt">4</span></div>
+              <div class="bar-row"><span class="lbl">Mistral</span><div class="bar-track"><div class="bar-fill" style="width:23%;background:var(--ok)"></div></div><span class="cnt">3</span></div>
+              <div class="bar-row"><span class="lbl">NVIDIA</span><div class="bar-track"><div class="bar-fill" style="width:23%;background:var(--fast)"></div></div><span class="cnt">3</span></div>
+              <div class="bar-row"><span class="lbl">Groq</span><div class="bar-track"><div class="bar-fill" style="width:23%;background:var(--danger)"></div></div><span class="cnt">3</span></div>
+              <div class="bar-row"><span class="lbl">Others</span><div class="bar-track"><div class="bar-fill" style="width:31%;background:var(--neutral)"></div></div><span class="cnt">4</span></div>
+            </section>
+
+            <section class="card">
+              <div class="card-h">
+                <h2>Capability vs Cost <span style="color:var(--text-faint);font-weight:400;font-size:var(--text-meta-size)">(Per 1M Tokens Input)</span></h2>
+                <div class="select-pill">By Value Score ▾</div>
+              </div>
+              <svg class="scatter" viewBox="0 0 360 180" aria-label="Capability vs cost scatter">
+                <line x1="40" y1="10" x2="40" y2="150" stroke="var(--chart-grid)" />
+                <line x1="40" y1="150" x2="350" y2="150" stroke="var(--chart-grid)" />
+                <line x1="40" y1="120" x2="350" y2="120" stroke="var(--chart-grid)" stroke-dasharray="2 3" />
+                <line x1="40" y1="90" x2="350" y2="90" stroke="var(--chart-grid)" stroke-dasharray="2 3" />
+                <line x1="40" y1="60" x2="350" y2="60" stroke="var(--chart-grid)" stroke-dasharray="2 3" />
+                <line x1="40" y1="30" x2="350" y2="30" stroke="var(--chart-grid)" stroke-dasharray="2 3" />
+                <text x="28" y="34" text-anchor="end" fill="var(--chart-axis)" font-size="9">10</text>
+                <text x="28" y="94" text-anchor="end" fill="var(--chart-axis)" font-size="9">5</text>
+                <text x="28" y="154" text-anchor="end" fill="var(--chart-axis)" font-size="9">0</text>
+                <!-- log-ish x positions -->
+                <circle cx="210" cy="28" r="6" fill="var(--chart-4)" /><text x="218" y="24" fill="var(--text-muted)" font-size="9">Claude Sonnet 5</text>
+                <circle cx="250" cy="36" r="6" fill="var(--chart-5)" /><text x="258" y="32" fill="var(--text-muted)" font-size="9">GPT-5.6 Sol</text>
+                <circle cx="180" cy="52" r="5" fill="var(--chart-2)" /><text x="188" y="48" fill="var(--text-muted)" font-size="9">Gemini 3.5 Flash</text>
+                <circle cx="160" cy="70" r="5" fill="var(--chart-1)" /><text x="168" y="66" fill="var(--text-muted)" font-size="9">GLM-5.2</text>
+                <circle cx="120" cy="95" r="5" fill="var(--ok)" /><text x="128" y="100" fill="var(--text-muted)" font-size="9">Grok 4.5</text>
+                <circle cx="90" cy="110" r="4" fill="var(--warn)" /><text x="70" y="124" fill="var(--text-muted)" font-size="9">MiMo-V2.5-Pro</text>
+              </svg>
+              <div class="axis-note">
+                <span>$0.01</span><span>$0.10</span><span>$1.00</span><span>$10.00</span><span>$100.00</span>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-h"><h2>Recently Updated</h2><a class="link-muted" href="#">View all</a></div>
+              <div class="upd-list">
+                <div class="upd-row">
+                  <span class="logo-tile">O</span>
+                  <div><div class="t">GPT-5.6 Sol</div><div class="d">Updated quotas</div></div>
+                  <span class="when">Jul 12, 2026</span>
+                </div>
+                <div class="upd-row">
+                  <span class="logo-tile">OC</span>
+                  <div><div class="t">GLM-5.2</div><div class="d">Added rating: Coding</div></div>
+                  <span class="when">Jul 12, 2026</span>
+                </div>
+                <div class="upd-row">
+                  <span class="logo-tile">A</span>
+                  <div><div class="t">Claude Sonnet 5</div><div class="d">Updated notes</div></div>
+                  <span class="when">Jul 11, 2026</span>
+                </div>
+                <div class="upd-row">
+                  <span class="logo-tile">G</span>
+                  <div><div class="t">Gemini 3.5 Flash</div><div class="d">Updated cost</div></div>
+                  <span class="when">Jul 10, 2026</span>
+                </div>
+                <div class="upd-row">
+                  <span class="logo-tile">x</span>
+                  <div><div class="t">Grok 4.5</div><div class="d">Updated context</div></div>
+                  <span class="when">Jul 9, 2026</span>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <aside class="col-rail">
+          <section class="card">
+            <div class="card-h"><h2>Quota Summary</h2><a class="link-muted" href="#">View all</a></div>
+
+            <div class="quota-row">
+              <div class="quota-top">
+                <span class="logo-tile">OC</span>
+                <span class="name">OpenCode Go</span>
+                <span class="vals">42 / 90 requests</span>
+              </div>
+              <div class="quota-sub">Resets in 2h 14m</div>
+              <div class="qbar"><i style="width:47%;background:var(--chart-1)"></i></div>
+              <div class="pct">47%</div>
+            </div>
+
+            <div class="quota-row">
+              <div class="quota-top">
+                <span class="logo-tile">A</span>
+                <span class="name">Claude API</span>
+                <span class="vals">1.2M / 3M tokens</span>
+              </div>
+              <div class="quota-sub">Resets in 6 days</div>
+              <div class="qbar"><i style="width:40%;background:var(--ok)"></i></div>
+              <div class="pct">40%</div>
+            </div>
+
+            <div class="quota-row">
+              <div class="quota-top">
+                <span class="logo-tile">G</span>
+                <span class="name">Gemini Advanced</span>
+                <span class="vals">18 / 30 requests</span>
+              </div>
+              <div class="quota-sub">Resets in 12 days</div>
+              <div class="qbar"><i style="width:60%;background:var(--warn)"></i></div>
+              <div class="pct">60%</div>
+            </div>
+
+            <div class="quota-row">
+              <div class="quota-top">
+                <span class="logo-tile">O</span>
+                <span class="name">ChatGPT Plus</span>
+                <span class="vals">Unlimited <span class="inf">∞</span></span>
+              </div>
+              <div class="quota-sub">Resets monthly</div>
+              <div class="qbar"><i style="width:100%;background:var(--advanced)"></i></div>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

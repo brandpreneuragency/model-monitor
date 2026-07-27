@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Providers &amp; Plans — Model Directory (reference)</title>
+  <link rel="stylesheet" href="../../packages/ui/src/tokens.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font-family: var(--font-sans); font-size: var(--text-body-size); font-weight: var(--text-body-weight);
+      line-height: var(--text-body-line); color: var(--text); background: var(--bg-app);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    button, input { font: inherit; color: inherit; }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: var(--sidebar-width); flex-shrink: 0; background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle); display: flex; flex-direction: column;
+      padding: var(--space-4) var(--space-3); position: sticky; top: 0; height: 100vh;
+    }
+    .brand { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); margin-bottom: var(--space-4); }
+    .brand-mark {
+      width: 28px; height: 28px; border-radius: var(--radius-lg); background: var(--accent);
+      display: grid; place-items: center; font-weight: 700;
+    }
+    .brand-name { font-size: var(--text-card-size); font-weight: 600; }
+    .nav { display: flex; flex-direction: column; gap: var(--space-1); }
+    .nav a {
+      display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-lg); color: var(--text-muted);
+    }
+    .nav a.active { background: var(--accent); color: var(--text); font-weight: 600; }
+    .nav-section {
+      margin-top: var(--space-6); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle);
+      font-size: 10px; letter-spacing: 0.08em; color: var(--text-faint); font-weight: 600;
+      padding-left: var(--space-3); margin-bottom: var(--space-2);
+    }
+    .shortcut {
+      display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1_5) var(--space-3);
+      border-radius: var(--radius-md); color: var(--text-muted); font-size: var(--text-meta-size);
+    }
+    .logo-tile {
+      width: 18px; height: 18px; border-radius: var(--radius-sm); background: var(--bg-card);
+      border: 1px solid var(--border); display: grid; place-items: center; font-size: 9px; font-weight: 700;
+      color: var(--text-muted); flex-shrink: 0;
+    }
+    .logo-lg {
+      width: 36px; height: 36px; border-radius: var(--radius-lg); background: var(--bg-input);
+      border: 1px solid var(--border); display: grid; place-items: center; font-size: 13px; font-weight: 700;
+      color: var(--text-muted); flex-shrink: 0;
+    }
+    .sidebar-foot { margin-top: auto; }
+    .promo {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl);
+      padding: var(--space-4); font-size: var(--text-meta-size); color: var(--text-muted);
+    }
+    .promo strong { display: block; color: var(--text); margin-bottom: var(--space-1); }
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg-surface); }
+    .topbar {
+      height: var(--topbar-height); display: flex; align-items: center; gap: var(--space-3);
+      padding: 0 var(--space-6); border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; z-index: 20;
+      background: var(--bg-surface);
+    }
+    .search {
+      flex: 1; max-width: 480px; margin: 0 auto; display: flex; align-items: center; gap: var(--space-2);
+      background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-full);
+      padding: var(--space-2) var(--space-4); color: var(--text-faint); font-size: var(--text-meta-size);
+    }
+    .search .hint { margin-left: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 6px; font-size: 10px; }
+    .top-actions { display: flex; align-items: center; gap: var(--space-2); margin-left: auto; }
+    .select-pill, .icon-btn, .dd {
+      background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: var(--space-1_5) var(--space-3); color: var(--text-muted); font-size: var(--text-meta-size);
+    }
+    .icon-btn { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1_5);
+      border-radius: var(--radius-md); padding: var(--space-1_5) var(--space-3);
+      border: 1px solid transparent; font-size: var(--text-meta-size); font-weight: 600;
+    }
+    .btn-primary { background: var(--accent); color: var(--text); }
+    .btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .avatar {
+      width: 32px; height: 32px; border-radius: var(--radius-full); background: var(--advanced-bg);
+      border: 1px solid var(--border); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--advanced);
+    }
+    .content {
+      display: grid; grid-template-columns: 1fr var(--rail-width); gap: var(--space-4);
+      padding: var(--space-6); align-items: start;
+    }
+    .col-main { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+    .col-rail { display: flex; flex-direction: column; gap: var(--space-4); position: sticky; top: calc(var(--topbar-height) + var(--space-4)); }
+    .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+    .page-head h1 { margin: 0; font-size: var(--text-page-size); font-weight: var(--text-page-weight); }
+    .page-head p { margin: var(--space-1) 0 0; color: var(--text-muted); font-size: var(--text-meta-size); }
+    .tabs-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+    .tabs {
+      display: flex; gap: var(--space-4); border-bottom: 1px solid var(--border-subtle); flex: 1;
+      font-size: var(--text-body-size); color: var(--text-muted);
+    }
+    .tabs span { padding: var(--space-2) 0; }
+    .tabs span.on { color: var(--accent); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+    .segment {
+      display: inline-flex; background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 2px;
+    }
+    .segment span { padding: 6px 12px; border-radius: var(--radius-sm); font-size: var(--text-meta-size); color: var(--text-muted); }
+    .segment span.on { background: var(--bg-card); color: var(--text); font-weight: 600; border: 1px solid var(--border); }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-4);
+    }
+    .card-h { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); flex-wrap: wrap; }
+    .card-h h2 { margin: 0; font-size: var(--text-section-size); font-weight: var(--text-section-weight); }
+    .prov-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3);
+    }
+    .prov {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3);
+    }
+    .prov-top { display: flex; align-items: flex-start; gap: var(--space-2); }
+    .prov-top .info { flex: 1; min-width: 0; }
+    .prov-top .name { font-size: var(--text-card-size); font-weight: 600; }
+    .prov-top .type { font-size: 11px; color: var(--text-faint); }
+    .stats { display: grid; grid-template-columns: 1fr; gap: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--border-subtle); }
+    .stat .lbl { font-size: 11px; color: var(--text-faint); }
+    .stat .val { font-size: var(--text-card-size); font-weight: 600; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 4px; }
+    .tag {
+      background: var(--neutral-bg); color: var(--text-muted); font-size: 10px; font-weight: 600;
+      padding: 2px 6px; border-radius: var(--radius-sm);
+    }
+    .chip {
+      display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-md);
+      font-size: 11px; font-weight: 600;
+    }
+    .chip-ok { background: var(--ok-bg); color: var(--ok); }
+    .chip-info { background: var(--info-bg); color: var(--info); }
+    .chip-advanced { background: var(--advanced-bg); color: var(--advanced); }
+    .chip-neutral { background: var(--neutral-bg); color: var(--text-muted); }
+    .muted { color: var(--text-muted); }
+    .faint { color: var(--text-faint); }
+    .link-muted { color: var(--text-muted); font-size: var(--text-meta-size); }
+    .toolbar { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+    .search-sm {
+      display: flex; align-items: center; gap: var(--space-2); background: var(--bg-input);
+      border: 1px solid var(--border); border-radius: var(--radius-md); padding: 6px 10px;
+      color: var(--text-faint); font-size: var(--text-meta-size); min-width: 180px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: var(--text-body-size); }
+    th {
+      text-align: left; color: var(--text-muted); font-weight: 500; font-size: var(--text-meta-size);
+      padding: var(--space-2); border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    td {
+      padding: var(--space-2); border-bottom: 1px solid var(--border-subtle); vertical-align: middle;
+    }
+    .plan-cell { display: flex; align-items: center; gap: var(--space-2); }
+    .plan-cell .nm { font-weight: 600; }
+    .plan-cell .sub { font-size: 11px; color: var(--text-faint); }
+    .cost-main { font-weight: 600; }
+    .cost-sub { font-size: 11px; color: var(--text-faint); }
+    .qmini { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+    .qmini-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 6px; align-items: center; font-size: 11px; color: var(--text-muted); }
+    .qbar { height: 4px; background: var(--bg-input); border-radius: var(--radius-full); overflow: hidden; }
+    .qbar > i { display: block; height: 100%; border-radius: var(--radius-full); }
+    .footer-bar {
+      display: flex; align-items: center; justify-content: space-between; padding-top: var(--space-3);
+      font-size: var(--text-meta-size); color: var(--text-muted);
+    }
+    .pager { display: flex; gap: var(--space-1); align-items: center; }
+    .pager span, .pager button {
+      min-width: 28px; height: 28px; display: grid; place-items: center; border-radius: var(--radius-md);
+      border: 1px solid transparent; background: transparent; color: var(--text-muted);
+    }
+    .pager .on { border-color: var(--border); background: var(--bg-input); color: var(--text); }
+    .quota-agg { margin-bottom: var(--space-4); }
+    .quota-agg .top { display: flex; align-items: center; gap: var(--space-2); margin-bottom: 6px; }
+    .quota-agg .top .lbl { flex: 1; font-size: var(--text-card-size); font-weight: 500; }
+    .quota-agg .top .vals { font-size: var(--text-meta-size); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .quota-agg .pct { font-size: 11px; color: var(--text-faint); margin-left: var(--space-2); }
+    .renew-row {
+      display: grid; grid-template-columns: 28px 1fr auto; gap: var(--space-2);
+      padding: var(--space-2) 0; border-bottom: 1px solid var(--border-subtle); font-size: var(--text-meta-size);
+    }
+    .renew-row .nm { font-weight: 600; }
+    .renew-row .prov { color: var(--text-faint); font-size: 11px; }
+    .renew-row .right { text-align: right; }
+    .renew-row .price { font-weight: 500; }
+    .renew-row .when { color: var(--text-faint); font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">◇</div><div class="brand-name">Model Directory</div></div>
+      <nav class="nav">
+        <a href="overview.html">⌂ Overview</a>
+        <a href="models.html">▣ Models</a>
+        <a href="rankings.html">☰ Rankings</a>
+        <a class="active" href="providers.html">⧉ Providers &amp; Plans</a>
+      </nav>
+      <div class="nav-section">SHORTCUTS</div>
+      <a class="shortcut" href="#"><span class="logo-tile">O</span> OpenAI</a>
+      <a class="shortcut" href="#"><span class="logo-tile">A</span> Anthropic</a>
+      <a class="shortcut" href="#"><span class="logo-tile">G</span> Google</a>
+      <a class="shortcut" href="#"><span class="logo-tile">OC</span> OpenCode</a>
+      <a class="shortcut" href="#"><span class="logo-tile">x</span> xAI</a>
+      <a class="shortcut" href="#"><span class="logo-tile">M</span> Mistral</a>
+      <a class="shortcut" href="#"><span class="logo-tile">N</span> NVIDIA</a>
+      <a class="shortcut" href="#"><span class="logo-tile">g</span> Groq</a>
+      <a class="shortcut" href="#"><span class="logo-tile">+</span> View all</a>
+      <div class="nav-section" style="border:0;margin-top:var(--space-4);padding-top:0"></div>
+      <a class="shortcut" href="#">⇪ Import / Export</a>
+      <a class="shortcut" href="#">⚙ Settings</a>
+      <div class="sidebar-foot">
+        <div class="promo">
+          <strong>Docs &amp; Help</strong>
+          Guides, API, and support
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="search">⌕ Search models, providers, plans, tags… <span class="hint">⌘ K</span></div>
+        <div class="top-actions">
+          <div class="select-pill">My Active View ▾</div>
+          <button type="button" class="icon-btn">▤</button>
+          <button type="button" class="btn btn-primary">+ Add Provider</button>
+          <button type="button" class="icon-btn">◐</button>
+          <div class="avatar">BP</div>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="col-main">
+          <div class="page-head">
+            <div>
+              <h1>Providers &amp; Plans</h1>
+              <p>Manage your AI providers, access plans, quotas, and renewals in one place.</p>
+            </div>
+          </div>
+
+          <div class="tabs-row">
+            <div class="tabs">
+              <span class="on">Providers</span>
+              <span>Plans</span>
+              <span>Quotas</span>
+              <span>Renewals</span>
+            </div>
+            <div class="segment">
+              <span class="on">▦ View as Grid</span>
+              <span>☰ View as List</span>
+            </div>
+          </div>
+
+          <div class="prov-grid">
+            <article class="prov">
+              <div class="prov-top">
+                <div class="logo-lg">O</div>
+                <div class="info"><div class="name">OpenAI</div><div class="type">AI Lab</div></div>
+                <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+              </div>
+              <span class="chip chip-ok" style="align-self:flex-start">Active</span>
+              <div class="stats">
+                <div class="stat"><div class="lbl">Active Plans</div><div class="val">2</div></div>
+                <div class="stat"><div class="lbl">Accessible Models</div><div class="val">13</div></div>
+                <div class="stat"><div class="lbl">Monthly Total</div><div class="val">$40.00</div></div>
+              </div>
+              <div class="tag-row"><span class="tag">LLM</span><span class="tag">Chat</span><span class="tag">Embeddings</span></div>
+            </article>
+            <article class="prov">
+              <div class="prov-top">
+                <div class="logo-lg">A</div>
+                <div class="info"><div class="name">Anthropic</div><div class="type">AI Lab</div></div>
+                <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+              </div>
+              <span class="chip chip-ok" style="align-self:flex-start">Active</span>
+              <div class="stats">
+                <div class="stat"><div class="lbl">Active Plans</div><div class="val">1</div></div>
+                <div class="stat"><div class="lbl">Accessible Models</div><div class="val">8</div></div>
+                <div class="stat"><div class="lbl">Monthly Total</div><div class="val">$20.00</div></div>
+              </div>
+              <div class="tag-row"><span class="tag">LLM</span><span class="tag">Reasoning</span><span class="tag">Safety</span></div>
+            </article>
+            <article class="prov">
+              <div class="prov-top">
+                <div class="logo-lg">G</div>
+                <div class="info"><div class="name">Google</div><div class="type">AI Lab</div></div>
+                <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+              </div>
+              <span class="chip chip-ok" style="align-self:flex-start">Active</span>
+              <div class="stats">
+                <div class="stat"><div class="lbl">Active Plans</div><div class="val">1</div></div>
+                <div class="stat"><div class="lbl">Accessible Models</div><div class="val">6</div></div>
+                <div class="stat"><div class="lbl">Monthly Total</div><div class="val">$19.99</div></div>
+              </div>
+              <div class="tag-row"><span class="tag">LLM</span><span class="tag">Multimodal</span><span class="tag">Vision</span></div>
+            </article>
+            <article class="prov">
+              <div class="prov-top">
+                <div class="logo-lg">OC</div>
+                <div class="info"><div class="name">OpenCode</div><div class="type">Platform</div></div>
+                <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+              </div>
+              <span class="chip chip-ok" style="align-self:flex-start">Active</span>
+              <div class="stats">
+                <div class="stat"><div class="lbl">Active Plans</div><div class="val">1</div></div>
+                <div class="stat"><div class="lbl">Accessible Models</div><div class="val">13</div></div>
+                <div class="stat"><div class="lbl">Monthly Total</div><div class="val">$10.00</div></div>
+              </div>
+              <div class="tag-row"><span class="tag">Coding</span><span class="tag">Agents</span><span class="tag">Tools</span></div>
+            </article>
+            <article class="prov">
+              <div class="prov-top">
+                <div class="logo-lg">x</div>
+                <div class="info"><div class="name">xAI</div><div class="type">AI Lab</div></div>
+                <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+              </div>
+              <span class="chip chip-ok" style="align-self:flex-start">Active</span>
+              <div class="stats">
+                <div class="stat"><div class="lbl">Active Plans</div><div class="val">1</div></div>
+                <div class="stat"><div class="lbl">Accessible Models</div><div class="val">4</div></div>
+                <div class="stat"><div class="lbl">Monthly Total</div><div class="val">$40.00</div></div>
+              </div>
+              <div class="tag-row"><span class="tag">LLM</span><span class="tag">Real-time</span><span class="tag">Web</span></div>
+            </article>
+            <article class="prov">
+              <div class="prov-top">
+                <div class="logo-lg">M</div>
+                <div class="info"><div class="name">Mistral</div><div class="type">AI Lab</div></div>
+                <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+              </div>
+              <span class="chip chip-ok" style="align-self:flex-start">Active</span>
+              <div class="stats">
+                <div class="stat"><div class="lbl">Active Plans</div><div class="val">1</div></div>
+                <div class="stat"><div class="lbl">Accessible Models</div><div class="val">4</div></div>
+                <div class="stat"><div class="lbl">Monthly Total</div><div class="val">$8.00</div></div>
+              </div>
+              <div class="tag-row"><span class="tag">LLM</span><span class="tag">Open Weights</span><span class="tag">Edge</span></div>
+            </article>
+            <article class="prov">
+              <div class="prov-top">
+                <div class="logo-lg">N</div>
+                <div class="info"><div class="name">NVIDIA</div><div class="type">Platform</div></div>
+                <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+              </div>
+              <span class="chip chip-ok" style="align-self:flex-start">Active</span>
+              <div class="stats">
+                <div class="stat"><div class="lbl">Active Plans</div><div class="val">1</div></div>
+                <div class="stat"><div class="lbl">Accessible Models</div><div class="val">25+</div></div>
+                <div class="stat"><div class="lbl">Monthly Total</div><div class="val">$0.00</div></div>
+              </div>
+              <div class="tag-row"><span class="tag">Inference</span><span class="tag">NIM</span><span class="tag">GPU</span></div>
+            </article>
+            <article class="prov">
+              <div class="prov-top">
+                <div class="logo-lg">g</div>
+                <div class="info"><div class="name">Groq</div><div class="type">Platform</div></div>
+                <button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button>
+              </div>
+              <span class="chip chip-ok" style="align-self:flex-start">Active</span>
+              <div class="stats">
+                <div class="stat"><div class="lbl">Active Plans</div><div class="val">1</div></div>
+                <div class="stat"><div class="lbl">Accessible Models</div><div class="val">7</div></div>
+                <div class="stat"><div class="lbl">Monthly Total</div><div class="val">$14.00</div></div>
+              </div>
+              <div class="tag-row"><span class="tag">LLM</span><span class="tag">Fast Inference</span><span class="tag">Edge</span></div>
+            </article>
+          </div>
+
+          <section class="card">
+            <div class="card-h">
+              <h2>Plans (6)</h2>
+              <div class="toolbar">
+                <span class="dd">All Providers ▾</span>
+                <div class="search-sm">⌕ Search plans…</div>
+                <button type="button" class="btn btn-ghost">▤ Filters</button>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Plan</th>
+                  <th>Access Type</th>
+                  <th>Monthly Cost</th>
+                  <th>Models</th>
+                  <th>Quota Summary</th>
+                  <th>Renewal Date</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="plan-cell">
+                      <span class="logo-lg" style="width:28px;height:28px;font-size:11px">O</span>
+                      <div><div class="nm">ChatGPT Plus</div><div class="sub">OpenAI</div></div>
+                    </div>
+                  </td>
+                  <td><span class="chip chip-info">Subscription</span></td>
+                  <td><div class="cost-main">$20.00 /mo</div></td>
+                  <td><div>9 models</div><a class="link-muted" href="#">View</a></td>
+                  <td>
+                    <div class="qmini">
+                      <div class="qmini-row"><span>Requests</span><div class="qbar"><i style="width:47%;background:var(--chart-1)"></i></div><span>42 / 90</span></div>
+                      <div class="qmini-row"><span>Tokens</span><div class="qbar"><i style="width:40%;background:var(--fast)"></i></div><span>1.2M / 3M</span></div>
+                    </div>
+                  </td>
+                  <td><div>Jun 12, 2026</div><div class="faint">in 21 days</div></td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td><button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="plan-cell">
+                      <span class="logo-lg" style="width:28px;height:28px;font-size:11px">A</span>
+                      <div><div class="nm">Claude API</div><div class="sub">Anthropic</div></div>
+                    </div>
+                  </td>
+                  <td><span class="chip chip-ok">PAYG</span></td>
+                  <td><div class="cost-main">$20.00 /mo</div><div class="cost-sub">Est. spend</div></td>
+                  <td><div>8 models</div><a class="link-muted" href="#">View</a></td>
+                  <td>
+                    <div class="qmini">
+                      <div class="qmini-row"><span>Tokens</span><div class="qbar"><i style="width:40%;background:var(--warn)"></i></div><span>1.2M / 3M</span></div>
+                    </div>
+                  </td>
+                  <td><div>Jun 6, 2026</div><div class="faint">in 15 days</div></td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td><button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="plan-cell">
+                      <span class="logo-lg" style="width:28px;height:28px;font-size:11px">G</span>
+                      <div><div class="nm">Gemini Advanced</div><div class="sub">Google</div></div>
+                    </div>
+                  </td>
+                  <td><span class="chip chip-info">Subscription</span></td>
+                  <td><div class="cost-main">$19.99 /mo</div></td>
+                  <td><div>6 models</div><a class="link-muted" href="#">View</a></td>
+                  <td>
+                    <div class="qmini">
+                      <div class="qmini-row"><span>Requests</span><div class="qbar"><i style="width:60%;background:var(--chart-1)"></i></div><span>18 / 30</span></div>
+                      <div class="qmini-row"><span>Tokens</span><div class="qbar"><i style="width:48%;background:var(--ok)"></i></div><span>2.4M / 5M</span></div>
+                    </div>
+                  </td>
+                  <td><div>Jun 15, 2026</div><div class="faint">in 24 days</div></td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td><button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="plan-cell">
+                      <span class="logo-lg" style="width:28px;height:28px;font-size:11px">OC</span>
+                      <div><div class="nm">OpenCode Go</div><div class="sub">OpenCode</div></div>
+                    </div>
+                  </td>
+                  <td><span class="chip chip-info">Subscription</span></td>
+                  <td><div class="cost-main">$10.00 /mo</div></td>
+                  <td><div>13 models</div><a class="link-muted" href="#">View</a></td>
+                  <td>
+                    <div class="qmini">
+                      <div class="qmini-row"><span>Requests</span><div class="qbar"><i style="width:47%;background:var(--chart-2)"></i></div><span>42 / 90</span></div>
+                    </div>
+                  </td>
+                  <td><div>Jun 14, 2026</div><div class="faint">in 23 days</div></td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td><button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="plan-cell">
+                      <span class="logo-lg" style="width:28px;height:28px;font-size:11px">N</span>
+                      <div><div class="nm">NVIDIA NIM</div><div class="sub">NVIDIA</div></div>
+                    </div>
+                  </td>
+                  <td><span class="chip chip-advanced">Pay As You Go</span></td>
+                  <td><div class="cost-main">$0.00 /mo</div><div class="cost-sub">Pay per use</div></td>
+                  <td><div>25+ models</div><a class="link-muted" href="#">View</a></td>
+                  <td>
+                    <div class="qmini">
+                      <div class="qmini-row"><span>Credits</span><div class="qbar"><i style="width:27%;background:var(--advanced)"></i></div><span>$27.34 / $100</span></div>
+                    </div>
+                  </td>
+                  <td><div class="faint">—</div><div class="faint">No renewal</div></td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td><button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="plan-cell">
+                      <span class="logo-lg" style="width:28px;height:28px;font-size:11px">x</span>
+                      <div><div class="nm">x Premium+</div><div class="sub">xAI</div></div>
+                    </div>
+                  </td>
+                  <td><span class="chip chip-info">Subscription</span></td>
+                  <td><div class="cost-main">$40.00 /mo</div></td>
+                  <td><div>4 models</div><a class="link-muted" href="#">View</a></td>
+                  <td>
+                    <div class="qmini">
+                      <div class="qmini-row"><span>Requests</span><div class="qbar"><i style="width:100%;background:var(--ok)"></i></div><span>Unlimited</span></div>
+                      <div class="qmini-row"><span>Tokens</span><div class="qbar"><i style="width:100%;background:var(--fast)"></i></div><span>Unlimited</span></div>
+                    </div>
+                  </td>
+                  <td><div>Jun 20, 2026</div><div class="faint">in 29 days</div></td>
+                  <td><span class="chip chip-ok">Active</span></td>
+                  <td><button type="button" class="icon-btn" style="width:28px;height:28px">⋮</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="footer-bar">
+              <span>Showing 1 to 6 of 6 plans</span>
+              <div class="pager">
+                <button type="button">‹</button>
+                <span class="on">1</span>
+                <button type="button">›</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="col-rail">
+          <section class="card">
+            <div class="card-h"><h2>Quota Summary</h2><a class="link-muted" href="#">View all quotas</a></div>
+
+            <div class="quota-agg">
+              <div class="top"><span class="logo-tile">R</span><span class="lbl">Requests</span><span class="vals">102 / 240</span><span class="pct">42%</span></div>
+              <div class="qbar" style="height:6px"><i style="width:42%;background:var(--chart-1)"></i></div>
+            </div>
+            <div class="quota-agg">
+              <div class="top"><span class="logo-tile">T</span><span class="lbl">Tokens</span><span class="vals">4.8M / 11M</span><span class="pct">44%</span></div>
+              <div class="qbar" style="height:6px"><i style="width:44%;background:var(--ok)"></i></div>
+            </div>
+            <div class="quota-agg">
+              <div class="top"><span class="logo-tile">C</span><span class="lbl">Credits</span><span class="vals">$27.34 / $100</span><span class="pct">27%</span></div>
+              <div class="qbar" style="height:6px"><i style="width:27%;background:var(--advanced)"></i></div>
+            </div>
+            <div class="quota-agg">
+              <div class="top"><span class="logo-tile">∞</span><span class="lbl">Unlimited Plans</span><span class="vals">2 of 6 plans</span></div>
+              <div class="qbar" style="height:6px"><i style="width:33%;background:var(--chart-5)"></i></div>
+            </div>
+            <div class="faint" style="font-size:11px;margin-top:var(--space-2)">Resets vary by plan</div>
+            <div class="muted" style="font-size:11px;margin-top:4px">Next reset: in 15h 42m</div>
+          </section>
+
+          <section class="card">
+            <div class="card-h"><h2>Upcoming Renewals</h2><a class="link-muted" href="#">View all renewals</a></div>
+            <div class="renew-row">
+              <span class="logo-tile">A</span>
+              <div><div class="nm">Claude API</div><div class="prov">Anthropic</div></div>
+              <div class="right"><div class="price">$20.00 / mo</div><div class="when">Jun 6, 2026<br />in 15 days</div></div>
+            </div>
+            <div class="renew-row">
+              <span class="logo-tile">O</span>
+              <div><div class="nm">ChatGPT Plus</div><div class="prov">OpenAI</div></div>
+              <div class="right"><div class="price">$20.00 / mo</div><div class="when">Jun 12, 2026<br />in 21 days</div></div>
+            </div>
+            <div class="renew-row">
+              <span class="logo-tile">OC</span>
+              <div><div class="nm">OpenCode Go</div><div class="prov">OpenCode</div></div>
+              <div class="right"><div class="price">$10.00 / mo</div><div class="when">Jun 14, 2026<br />in 23 days</div></div>
+            </div>
+            <div class="renew-row">
+              <span class="logo-tile">G</span>
+              <div><div class="nm">Gemini Advanced</div><div class="prov">Google</div></div>
+              <div class="right"><div class="price">$19.99 / mo</div><div class="when">Jun 15, 2026<br />in 24 days</div></div>
+            </div>
+            <div class="renew-row" style="border:0">
+              <span class="logo-tile">x</span>
+              <div><div class="nm">x Premium+</div><div class="prov">xAI</div></div>
+              <div class="right"><div class="price">$40.00 / mo</div><div class="when">Jun 20, 2026<br />in 29 days</div></div>
+            </div>
+            <div class="faint" style="font-size:11px;margin-top:var(--space-2)">All times shown in your local timezone</div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
