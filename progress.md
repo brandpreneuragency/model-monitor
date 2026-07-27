@@ -211,3 +211,36 @@ rm -f "$REPO_DIR/packages/ui/src/tokens.css"
 # revert this progress.md entry if abandoning the phase
 ```
 
+
+## ui-primitives (2026-07-27T22:28Z) — RESULT=PASS
+
+### Built
+- Full design-system component set in `packages/ui/src/` (one file each, exported from `index.ts`):
+  Button, IconButton, Badge, StatusChip, Tag, FilterChip, Card, Panel, DataTable,
+  Drawer, Dialog, Popover, Select, Combobox, Input, Textarea, Toggle, Slider,
+  ProgressBar, ScoreCell, Sparkline, EmptyState, Skeleton, Tabs, SegmentedControl.
+- Shared `types.ts` / `styles.ts`; styles use only `var(--…)` tokens from `tokens.css`.
+- `ScoreCell`: null/undefined → untested `—` (empty band); `0` renders `"0"` (weak) — never conflated.
+- `ProgressBar`: `unlimited` shows `∞` with no percentage.
+- `DataTable`: TanStack Table, sticky header, density, selection, sortable columns.
+- `Drawer`: right side, sizes, focus trap, Escape to close, `--shadow-drawer`.
+- Unit tests: `score-cell`, `progress-bar`, `status-chip`, `data-table`, `drawer` (+ existing `cn`).
+- Dev gallery: `apps/web/src/app/_gallery/page.tsx` (not linked from nav).
+- Deps: `@tanstack/react-table`, testing-library + jsdom for UI package.
+
+### Verified
+- `pnpm lint` EXIT=0
+- `pnpm typecheck` EXIT=0
+- `pnpm test:unit` EXIT=0 (ui 15, web 52, database 41, schemas 85)
+- Raw hex/rgb/hsl grep on `packages/ui/src` components: empty (hex only in `tokens.css`)
+- No gradients / glows; shadow only via `--shadow-drawer` on overlay surfaces
+
+### Evidence
+- `$RUN_DIR/ui-primitives.txt` RESULT=PASS
+
+### Rollback
+```
+git -C "$REPO_DIR" checkout -- packages/ui apps/web/src/app/_gallery
+# also reverse pnpm-lock / package.json dep adds if abandoning:
+# git checkout -- pnpm-lock.yaml packages/ui/package.json
+```
