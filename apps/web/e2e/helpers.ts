@@ -41,7 +41,7 @@ function resolveDatabaseUrl(): string {
   const pass = process.env.POSTGRES_PASSWORD ?? user;
   const host = process.env.POSTGRES_HOST ?? "127.0.0.1";
   const port = process.env.POSTGRES_PORT ?? "5433";
-  const database = process.env.POSTGRES_DB ?? "modelmonitor";
+  const database = process.env.POSTGRES_DB ?? "modelmonitor_test";
   return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@${host}:${port}/${database}`;
 }
 

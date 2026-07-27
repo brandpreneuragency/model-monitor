@@ -2,21 +2,13 @@ import postgres from "postgres";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-function resolveDatabaseUrl(): string {
-  if (process.env.DATABASE_URL && process.env.DATABASE_URL.trim() !== "") {
-    return process.env.DATABASE_URL;
-  }
-  const user = process.env.POSTGRES_USER ?? "modelmonitor";
-  const pass = process.env.POSTGRES_PASSWORD ?? user;
-  const host = process.env.POSTGRES_HOST ?? "127.0.0.1";
-  const port = process.env.POSTGRES_PORT ?? "5433";
-  const database = process.env.POSTGRES_DB ?? "modelmonitor";
-  return ["postgresql://", user, ":", pass, "@", host, ":", port, "/", database].join("");
-}
+import { applyTestDatabaseEnv, assertNotProductionDatabase } from "./test-database-url";
 
-const sql = postgres(resolveDatabaseUrl(), { max: 1 });
+const databaseUrl = applyTestDatabaseEnv();
+assertNotProductionDatabase(databaseUrl);
+const sql = postgres(databaseUrl, { max: 1 });
 
-const SEED_DIR = join(import.meta.dirname, "..", "..", "..", "docs", "implementation-package", "data");
+const SEED_DIR = join(import.meta.dirname, "..", "seed-data");
 
 function loadCanonicalIds(): string[] {
   const raw = JSON.parse(readFileSync(join(SEED_DIR, "canonical-models.seed.json"), "utf8")) as Array<{

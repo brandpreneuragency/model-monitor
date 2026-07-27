@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import { playwrightLdPath, playwrightPort } from "./e2e/helpers";
+import { applyTestDatabaseEnv } from "./e2e/test-database-url";
 
 /**
  * Bypassed model workflow suite (AUTH_DEV_BYPASS=true).
@@ -8,6 +9,7 @@ import { playwrightLdPath, playwrightPort } from "./e2e/helpers";
 const port = playwrightPort(3110);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${port}`;
 const ldPath = playwrightLdPath();
+const testDatabaseUrl = applyTestDatabaseEnv();
 
 export default defineConfig({
   testDir: "./e2e",
@@ -29,6 +31,8 @@ export default defineConfig({
     launchOptions: {
       env: {
         ...process.env,
+        DATABASE_URL: testDatabaseUrl,
+        POSTGRES_DB: "modelmonitor_test",
         LD_LIBRARY_PATH: ldPath,
       },
     },
@@ -46,6 +50,8 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       ...process.env,
+      DATABASE_URL: testDatabaseUrl,
+      POSTGRES_DB: "modelmonitor_test",
       AUTH_DEV_BYPASS: "true",
       NODE_ENV: "development",
       LD_LIBRARY_PATH: ldPath,

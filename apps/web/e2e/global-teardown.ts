@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { applyTestDatabaseEnv, assertNotProductionDatabase } from "./test-database-url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.resolve(here, "..");
@@ -35,6 +36,8 @@ function runDbCleanup(label: string) {
  * package.json removes artifacts only after a successful complete e2e chain.
  */
 export default async function globalTeardown(_config: { quiet?: boolean } = {}) {
+  const url = applyTestDatabaseEnv();
+  assertNotProductionDatabase(url);
   runDbCleanup("globalTeardown");
   // Playwright sets process exit differently; only strip artifacts when explicitly requested.
   if (process.env.E2E_CLEAN_ARTIFACTS === "1") {

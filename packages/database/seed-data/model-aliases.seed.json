@@ -1,0 +1,127 @@
+[
+  {
+    "alias": "MiMo-V2.5",
+    "canonicalId": "xiaomi/mimo-v2.5",
+    "type": "display_name"
+  },
+  {
+    "alias": "MiMo V2.5",
+    "canonicalId": "xiaomi/mimo-v2.5",
+    "type": "display_name"
+  },
+  {
+    "alias": "mimo-v2.5",
+    "canonicalId": "xiaomi/mimo-v2.5",
+    "type": "provider_id"
+  },
+  {
+    "alias": "MiMo-V2.5-Pro",
+    "canonicalId": "xiaomi/mimo-v2.5-pro",
+    "type": "display_name"
+  },
+  {
+    "alias": "MiMo V2.5 Pro",
+    "canonicalId": "xiaomi/mimo-v2.5-pro",
+    "type": "display_name"
+  },
+  {
+    "alias": "mimo-v2.5-pro",
+    "canonicalId": "xiaomi/mimo-v2.5-pro",
+    "type": "provider_id"
+  },
+  {
+    "alias": "CommandCode DeepSeek V4 Pro",
+    "canonicalId": "deepseek/v4-pro",
+    "type": "access_alias"
+  },
+  {
+    "alias": "CommandCode MiniMax M3",
+    "canonicalId": "minimax/m3",
+    "type": "access_alias"
+  },
+  {
+    "alias": "Nemotron 3 Ultra",
+    "canonicalId": "nvidia/nemotron-3-ultra-550b-a55b",
+    "type": "short_name"
+  },
+  {
+    "alias": "OpenCode Zen Nemotron 3 Ultra",
+    "canonicalId": "nvidia/nemotron-3-ultra-550b-a55b",
+    "type": "access_alias"
+  },
+  {
+    "alias": "Hy3",
+    "canonicalId": "tencent/hy3",
+    "type": "display_name"
+  },
+  {
+    "alias": "opencode-go/glm-5.2",
+    "canonicalId": "z-ai/glm-5.2",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "opencode-go/glm-5.1",
+    "canonicalId": "z-ai/glm-5.1",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "opencode-go/kimi-k2.7-code",
+    "canonicalId": "moonshot/kimi-k2.7-code",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "opencode-go/kimi-k2.6",
+    "canonicalId": "moonshot/kimi-k2.6",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "opencode-go/mimo-v2.5",
+    "canonicalId": "xiaomi/mimo-v2.5",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "opencode-go/mimo-v2.5-pro",
+    "canonicalId": "xiaomi/mimo-v2.5-pro",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "opencode-go/minimax-m3",
+    "canonicalId": "minimax/m3",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "opencode-go/minimax-m2.7",
+    "canonicalId": "minimax/m2.7",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "opencode-go/qwen3.7-max",
+    "canonicalId": "alibaba/qwen3.7-max",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "opencode-go/qwen3.7-plus",
+    "canonicalId": "alibaba/qwen3.7-plus",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "opencode-go/qwen3.6-plus",
+    "canonicalId": "alibaba/qwen3.6-plus",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "opencode-go/deepseek-v4-pro",
+    "canonicalId": "deepseek/v4-pro",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "opencode-go/deepseek-v4-flash",
+    "canonicalId": "deepseek/v4-flash",
+    "type": "source_model_id"
+  },
+  {
+    "alias": "tencent/Hy3",
+    "canonicalId": "tencent/hy3",
+    "type": "source_model_id"
+  }
+]

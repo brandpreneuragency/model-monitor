@@ -244,3 +244,48 @@ git -C "$REPO_DIR" checkout -- packages/ui apps/web/src/app/_gallery
 # also reverse pnpm-lock / package.json dep adds if abandoning:
 # git checkout -- pnpm-lock.yaml packages/ui/package.json
 ```
+
+### data-hygiene (2026-07-27T22:37Z) — RESULT=PASS
+
+#### Built
+- Pre-delete dump: `/home/admin/01_atlas/05_backups/model-monitor-prehygiene-20260727T223216Z.sql.gz` (118683 bytes).
+- Deleted production junk in one transaction (prefix-only): 0 `model_access` on mmtest plans, 8 `mme2e:` subscriptions, 73 `mmtest:` plans.
+- Created isolated Postgres DB `modelmonitor_test` (schema = post-hygiene prod clone; migrations 0000–0006 present).
+- Forced `DATABASE_URL` → `modelmonitor_test` in:
+  - `apps/web/playwright.config.ts`
+  - `apps/web/playwright.auth.config.ts`
+  - `apps/web/vitest.integration.config.ts`
+  - `packages/database/vitest.integration.config.ts`
+- Production guards (throw if `DATABASE_URL` ends with `/modelmonitor`) in:
+  - `apps/web/e2e/global-setup.ts` (+ teardown)
+  - `apps/web/src/test/integration-setup.ts`
+  - `packages/database/src/integration-setup.ts` / `test-database-url.ts`
+  - `seed-integrity.test.ts`
+- Restored seed JSON fixtures to `packages/database/seed-data/` and pointed `seed.ts` + `seed-integrity` at that path (legacy `docs/implementation-package/data` was deleted earlier).
+
+#### Verified
+- Before: mmtest plans 73, mme2e subs 8 (matches preflight 77/12 totals).
+- After delete production: plans 4, subscriptions 4, models 51, access_providers 4, model_access 19, benchmarks 276; junk counts 0.
+- `pnpm test:integration` exit 0 (db 64 pass / 2 skip; web health 1 pass).
+- Production unchanged after integration (audit still 992; zero mmtest rows).
+- `modelmonitor_test` received writes (plans 4→7 with 3 mmtest plans; audit 992→1025).
+- Guard unit: blocks `/modelmonitor`, allows `/modelmonitor_test`.
+- OLD_APP: 7 containers; `/login` 200; `/` 307 → `/login?callbackUrl=%2F`.
+- `pnpm lint` 0; `pnpm typecheck` 0.
+- Evidence: `$RUN_DIR/data-hygiene.txt` with `JUNK_PLANS=0`, `JUNK_SUBS=0`, `TEST_DB_ISOLATED=PASS`, `OLD_APP=UP`, `RESULT=PASS`.
+
+#### Deferred
+- None for this phase. Residual mmtest rows left in `modelmonitor_test` only (expected; cleaned by e2e cleanup when those suites run).
+
+#### Unsure
+- None blocking.
+
+#### Rollback (this phase only)
+```
+# restore production rows from pre-hygiene dump (sql.gz via psql), then:
+git -C "$REPO_DIR" checkout -- apps/web packages/database
+# drop test db:
+docker exec -i model-monitor-postgres psql -U modelmonitor -d postgres -c 'DROP DATABASE IF EXISTS modelmonitor_test;'
+# dump file may be kept
+```
+

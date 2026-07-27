@@ -16,7 +16,7 @@ function resolveDatabaseUrl(): string {
 
 const sql = postgres(resolveDatabaseUrl(), { max: 1 });
 
-const SEED_DIR = join(import.meta.dirname, "..", "..", "..", "docs", "implementation-package", "data");
+const SEED_DIR = join(import.meta.dirname, "..", "seed-data");
 
 const BASELINE_PREFIX = "mm-baseline:";
 const OWNER_EMAIL = "owner@model-monitor.local";
