@@ -39,6 +39,9 @@ export const accessProviders = pgTable("access_providers", {
   providerType: text("provider_type"),
   websiteUrl: text("website_url"),
   notes: text("notes"),
+  // Presentation (api-providers-plans) — nullable; old app ignores.
+  logoUrl: text("logo_url"),
+  colour: text("colour"),
   status: text("status").notNull().default("active"),
   archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -78,7 +78,10 @@ export const localAccessProviderWriteSchema = z.object({
   slug: requiredTrimmedString,
   providerType: z.string().nullable().optional(),
   websiteUrl: optionalHttpUrlSchema,
+  logoUrl: optionalHttpUrlSchema,
+  colour: z.string().trim().min(1).max(40).nullable().optional(),
   notes: z.string().nullable().optional(),
+  status: recordStatusSchema.optional(),
 });
 
 export const localPlanWriteSchema = z.object({
@@ -211,17 +214,56 @@ export const accessProviderResponseSchema = localAccessProviderWriteSchema.exten
   archivedAt: z.string().datetime().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+  // Derived (list/detail)
+  activePlansCount: z.number().int().nonnegative().optional(),
+  accessibleModelsCount: z.number().int().nonnegative().optional(),
+  monthlyTotal: z.number().nullable().optional(),
+  capabilityTags: z.array(z.string()).optional(),
+  logoUrl: z.string().nullable().optional(),
+  colour: z.string().nullable().optional(),
 });
 
 // ── Plan response ──────────────────────────────────────────────
 
+export const planQuotaSummaryItemSchema = z.object({
+  id: uuidSchema,
+  name: z.string(),
+  amount: z.number().nullable(),
+  amountMin: z.number().nullable(),
+  amountMax: z.number().nullable(),
+  unit: z.string(),
+  customUnit: z.string().nullable().optional(),
+  period: z.string(),
+  remainingAmount: z.number().nullable().optional(),
+  remainingUpdatedAt: z.string().datetime().nullable().optional(),
+  isUnlimited: z.boolean().optional(),
+});
+
 export const planResponseSchema = localPlanWriteSchema.extend({
   id: uuidSchema,
+  status: recordStatusSchema.default("active"),
+  archivedAt: z.string().datetime().nullable().optional(),
   accessProvider: z.object({
     id: uuidSchema,
     name: z.string(),
     slug: z.string(),
   }),
+  monthlyCost: z.number().nullable().optional(),
+  includedModels: z
+    .array(
+      z.object({
+        id: uuidSchema,
+        name: z.string(),
+        slug: z.string(),
+      }),
+    )
+    .optional(),
+  quotaSummary: z
+    .object({
+      count: z.number().int().nonnegative(),
+      items: z.array(planQuotaSummaryItemSchema),
+    })
+    .optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -229,6 +271,7 @@ export const planResponseSchema = localPlanWriteSchema.extend({
 // ── Model access detail ────────────────────────────────────────
 
 export const modelAccessDetailResponseSchema = localModelAccessResponseSchema.extend({
+  isPreferred: z.boolean().optional(),
   model: z.object({
     id: uuidSchema,
     name: z.string(),

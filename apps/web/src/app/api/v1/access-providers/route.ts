@@ -20,6 +20,7 @@ export async function GET(request: Request) {
     const filter = {
       search: url.searchParams.get("search") ?? undefined,
       archived: url.searchParams.get("archived") ?? undefined,
+      providerType: url.searchParams.get("providerType") ?? undefined,
     };
     const data = await listAccessProviders(db, filter);
     return jsonOk({ data, meta: { requestId } }, { requestId });

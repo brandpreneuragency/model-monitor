@@ -1,4 +1,4 @@
-import { getPlan, updatePlan } from "@model-monitor/database";
+import { listPlanQuotas, createPlanQuota } from "@model-monitor/database";
 import { db } from "@/lib/db";
 import {
   auditContext,
@@ -19,26 +19,26 @@ export async function GET(request: Request, context: RouteContext) {
   try {
     await requireApiSession(requestId);
     const { planId } = await context.params;
-    const plan = await getPlan(db, parsePathUuid(planId, "planId"));
-    return jsonOk(plan, { requestId });
+    const data = await listPlanQuotas(db, parsePathUuid(planId, "planId"));
+    return jsonOk({ data, meta: { requestId } }, { requestId });
   } catch (error) {
     return jsonError(error, requestId);
   }
 }
 
-export async function PATCH(request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   const requestId = getRequestId(request);
   try {
     const session = await requireApiSession(requestId);
     const { planId } = await context.params;
     const body = await parseJsonBody(request);
-    const plan = await updatePlan(
+    const quota = await createPlanQuota(
       db,
       parsePathUuid(planId, "planId"),
       body,
       auditContext(request, session.userId),
     );
-    return jsonOk(plan, { requestId });
+    return jsonOk(quota, { status: 201, requestId });
   } catch (error) {
     return jsonError(error, requestId);
   }

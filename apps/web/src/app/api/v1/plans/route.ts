@@ -19,6 +19,8 @@ export async function GET(request: Request) {
       accessProviderSlug: url.searchParams.get("accessProviderSlug") ?? undefined,
       search: url.searchParams.get("search") ?? undefined,
       archived: url.searchParams.get("archived") ?? undefined,
+      accessType: url.searchParams.get("accessType") ?? undefined,
+      status: url.searchParams.get("status") ?? undefined,
     };
     const data = await listPlans(db, filter);
     return jsonOk({ data, meta: { requestId } }, { requestId });

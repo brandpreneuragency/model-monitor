@@ -479,10 +479,12 @@ export const modelAccessWriteSchema = z.object({
   oauthSupported: z.boolean().nullable().optional(),
   priority: z.number().int().nullable().optional(),
   limitations: z.string().nullable().optional(),
+  isPreferred: z.boolean().optional(),
 });
 
 export const modelAccessResponseSchema = modelAccessWriteSchema.extend({
   id: uuidSchema,
+  isPreferred: z.boolean().optional(),
 });
 
 // ── Developer write schema ─────────────────────────────────────
@@ -494,14 +496,31 @@ export const developerWriteSchema = z.object({
   notes: z.string().nullable().optional(),
 });
 
+// ── Access provider type (presentation labels → stable slugs) ──
+
+export const accessProviderTypeSchema = z.enum([
+  "model_creator",
+  "api_provider",
+  "subscription_platform",
+  "aggregator",
+  "open_weights_host",
+  "local_runtime",
+]);
+
 // ── Access provider write schema ───────────────────────────────
 
 export const accessProviderWriteSchema = z.object({
   name: requiredTrimmedString,
   slug: requiredTrimmedString,
-  providerType: z.string().nullable().optional(),
+  providerType: z
+    .union([accessProviderTypeSchema, z.string().trim().min(1).max(80)])
+    .nullable()
+    .optional(),
   websiteUrl: optionalHttpUrlSchema,
+  logoUrl: optionalHttpUrlSchema,
+  colour: z.string().trim().min(1).max(40).nullable().optional(),
   notes: z.string().nullable().optional(),
+  status: recordStatusSchema.optional(),
 });
 
 // ── Plan write schema ──────────────────────────────────────────
@@ -519,6 +538,27 @@ export const planWriteSchema = z.object({
   authenticationType: authenticationTypeSchema.default("other"),
   usageMeasurementType: z.string().nullable().optional(),
   termsSummary: z.string().nullable().optional(),
+  renewalDate: z.string().date().nullable().optional(),
+  billingPeriod: z.string().nullable().optional(),
+  autoRenews: z.boolean().nullable().optional(),
+  actualPrice: z.number().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  startedAt: z.string().date().nullable().optional(),
+  cancelledAt: z.string().date().nullable().optional(),
+  introPriceExpiresAt: z.string().date().nullable().optional(),
+  accessType: z
+    .enum([
+      "subscription",
+      "api",
+      "free_tier",
+      "trial",
+      "open_weights",
+      "local",
+      "included",
+    ])
+    .nullable()
+    .optional(),
+  status: recordStatusSchema.optional(),
 });
 
 // ── API error schema ───────────────────────────────────────────

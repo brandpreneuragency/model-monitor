@@ -85,9 +85,19 @@ export const createPlanQuotaSchema = z.object({
   notes: z.string().max(8000).nullable().optional(),
 });
 
+/** Nested POST /plans/:planId/quotas — planId comes from the path. */
+export const createPlanQuotaBodySchema = createPlanQuotaSchema.omit({ planId: true });
+
 export const updatePlanQuotaSchema = createPlanQuotaSchema
   .omit({ planId: true })
   .partial();
+
+/** High-frequency remaining-only write. */
+export const patchQuotaRemainingSchema = z
+  .object({
+    remainingAmount: z.number().nullable(),
+  })
+  .strict();
 
 // ── Plan billing fields (absorbed from subscriptions) ──────────
 
@@ -101,6 +111,40 @@ export const planBillingFieldsSchema = z.object({
   cancelledAt: z.string().date().nullable(),
   introPriceExpiresAt: z.string().date().nullable(),
   accessType: accessTypeSchema.nullable(),
+});
+
+// ── Renewals ───────────────────────────────────────────────────
+
+export const renewalKindSchema = z.enum([
+  "subscription_renewal",
+  "trial_expiration",
+  "promotional_price_expiration",
+  "manual_review",
+]);
+
+export const renewalItemSchema = z.object({
+  kind: renewalKindSchema,
+  date: z.string().date(),
+  entityType: z.enum(["plan", "model"]),
+  entityId: z.string().uuid(),
+  title: z.string(),
+  subtitle: z.string().nullable(),
+  amount: z.number().nullable(),
+  currency: z.string().nullable(),
+  provider: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+      slug: z.string(),
+    })
+    .nullable(),
+});
+
+export const renewalsListQuerySchema = z.object({
+  from: z.string().date().optional(),
+  to: z.string().date().optional(),
+  kind: renewalKindSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(500).optional().default(100),
 });
 
 // ── Model redesign fields ──────────────────────────────────────

@@ -525,3 +525,47 @@ rm -f scripts/apply-csv-migration.mts
 - UI still uses legacy models page; later phases rebuild table/filters against these params.
 - `subscription` query param now maps to plan (subscriptions product concept retired).
 
+### api-providers-plans (2026-07-28T23:45Z) — RESULT=PASS
+
+#### Built
+- Providers API: GET/POST list+create; GET/PATCH/archive by id. Type, status, website,
+  logoUrl, colour, notes; derived activePlansCount, accessibleModelsCount, monthlyTotal,
+  capabilityTags.
+- Plans API: GET/POST list+create; GET/PATCH by id. Provider, access type, monthly cost,
+  intro cost, billing period, renewal date, status, included models, quota summary, notes.
+- Quotas: GET/POST `/plans/[planId]/quotas`; PATCH/DELETE `/quotas/[quotaId]`. Range +
+  custom unit/period. Remaining-only PATCH stamps `remaining_updated_at`.
+- Model access PATCH supports `isPreferred`; promoting one route clears others in the
+  same transaction (partial unique index safe).
+- Renewals GET: sorted list with kinds `subscription_renewal`, `trial_expiration`,
+  `promotional_price_expiration`, `manual_review` (informational only).
+- Additive migration `0009_provider_logo_colour.sql` on prod + test DBs.
+
+#### Verified
+- `pnpm lint`, `typecheck`, `test:unit`, `test:integration` all PASS.
+- New `api-providers-plans.integration.test.ts` covers the four required scenarios.
+- Integration: 12 files, 91 passed | 2 skipped.
+
+#### Files
+- `packages/database/src/services/plans.ts`, `access.ts`
+- `packages/database/migrations/0009_provider_logo_colour.sql`
+- `packages/database/src/api-providers-plans.integration.test.ts`
+- `packages/schemas/src/{primitives,phase3,plans-models}.ts`
+- `apps/web/src/app/api/v1/{access-providers,plans,quotas,renewals}/**`
+
+#### Deferred / notes
+- Provider logo is URL text only (no asset upload).
+- Manual review renewal date uses `models.verified_at::date` when `needs_review`, else
+  `updated_at::date`.
+- Quota remaining-only writes skip audit (high-frequency personal edit class).
+
+#### Rollback (this phase only)
+```
+git checkout -- apps/web/src/app/api packages/database/src/services \
+  packages/database/src/schema packages/database/src/schema-unit.test.ts \
+  packages/database/src/api-providers-plans.integration.test.ts \
+  packages/schemas/src
+# optional: leave 0009 applied (additive nullable columns) or reverse:
+# ALTER TABLE access_providers DROP COLUMN IF EXISTS logo_url, DROP COLUMN IF EXISTS colour;
+```
+

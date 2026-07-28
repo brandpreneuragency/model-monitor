@@ -79,6 +79,7 @@ function mapModelDetailRow(
     oauthSupported: row.access.oauthSupported,
     priority: row.access.priority,
     limitations: row.access.limitations,
+    isPreferred: row.access.isPreferred,
     model: {
       id: row.access.modelId,
       name: row.modelName,
@@ -287,6 +288,19 @@ export async function createModelAccess(
 
   try {
     const createdId = await db.transaction(async (tx: Tx) => {
+      if (input.isPreferred === true) {
+        // Clear other preferred routes for this model first (partial unique index).
+        await tx
+          .update(schema.modelAccess)
+          .set({ isPreferred: false, updatedAt: new Date() })
+          .where(
+            and(
+              eq(schema.modelAccess.modelId, input.modelId),
+              eq(schema.modelAccess.isPreferred, true),
+            ),
+          );
+      }
+
       const [created] = await tx
         .insert(schema.modelAccess)
         .values({
@@ -303,6 +317,7 @@ export async function createModelAccess(
           oauthSupported: input.oauthSupported ?? null,
           priority: input.priority ?? null,
           limitations: input.limitations ?? null,
+          isPreferred: input.isPreferred ?? false,
           status: "active",
         })
         .returning();
@@ -347,51 +362,74 @@ export async function updateModelAccess(
   }
   const input = parsed.data;
 
-  await db.transaction(async (tx: Tx) => {
-    const [before] = await tx
-      .select()
-      .from(schema.modelAccess)
-      .where(eq(schema.modelAccess.id, uuid))
-      .limit(1);
+  try {
+    await db.transaction(async (tx: Tx) => {
+      const [before] = await tx
+        .select()
+        .from(schema.modelAccess)
+        .where(eq(schema.modelAccess.id, uuid))
+        .limit(1);
 
-    if (!before) {
-      throw new ModelServiceError("NOT_FOUND", "Model access not found", 404);
-    }
+      if (!before) {
+        throw new ModelServiceError("NOT_FOUND", "Model access not found", 404);
+      }
 
-    const patch: Partial<typeof schema.modelAccess.$inferInsert> = { updatedAt: new Date() };
-    if (input.modelId !== undefined) patch.modelId = input.modelId;
-    if (input.planId !== undefined) patch.planId = input.planId;
-    if (input.providerModelId !== undefined) patch.providerModelId = input.providerModelId;
-    if (input.availability !== undefined) patch.availability = input.availability;
-    if (input.accessMethod !== undefined) patch.accessMethod = input.accessMethod;
-    if (input.authenticationType !== undefined) patch.authenticationType = input.authenticationType;
-    if (input.includedInPlan !== undefined) patch.includedInPlan = input.includedInPlan;
-    if (input.apiCompatible !== undefined) patch.apiCompatible = input.apiCompatible;
-    if (input.cliOnly !== undefined) patch.cliOnly = input.cliOnly;
-    if (input.webOnly !== undefined) patch.webOnly = input.webOnly;
-    if (input.oauthSupported !== undefined) patch.oauthSupported = input.oauthSupported;
-    if (input.priority !== undefined) patch.priority = input.priority;
-    if (input.limitations !== undefined) patch.limitations = input.limitations;
+      const modelId = input.modelId ?? before.modelId;
 
-    const [after] = await tx
-      .update(schema.modelAccess)
-      .set(patch)
-      .where(eq(schema.modelAccess.id, uuid))
-      .returning();
+      if (input.isPreferred === true) {
+        // Clear other preferred routes for this model in the same transaction.
+        await tx
+          .update(schema.modelAccess)
+          .set({ isPreferred: false, updatedAt: new Date() })
+          .where(
+            and(
+              eq(schema.modelAccess.modelId, modelId),
+              eq(schema.modelAccess.isPreferred, true),
+            ),
+          );
+      }
 
-    if (!after) {
-      throw new ModelServiceError("NOT_FOUND", "Model access not found", 404);
-    }
+      const patch: Partial<typeof schema.modelAccess.$inferInsert> = { updatedAt: new Date() };
+      if (input.modelId !== undefined) patch.modelId = input.modelId;
+      if (input.planId !== undefined) patch.planId = input.planId;
+      if (input.providerModelId !== undefined) patch.providerModelId = input.providerModelId;
+      if (input.availability !== undefined) patch.availability = input.availability;
+      if (input.accessMethod !== undefined) patch.accessMethod = input.accessMethod;
+      if (input.authenticationType !== undefined) patch.authenticationType = input.authenticationType;
+      if (input.includedInPlan !== undefined) patch.includedInPlan = input.includedInPlan;
+      if (input.apiCompatible !== undefined) patch.apiCompatible = input.apiCompatible;
+      if (input.cliOnly !== undefined) patch.cliOnly = input.cliOnly;
+      if (input.webOnly !== undefined) patch.webOnly = input.webOnly;
+      if (input.oauthSupported !== undefined) patch.oauthSupported = input.oauthSupported;
+      if (input.priority !== undefined) patch.priority = input.priority;
+      if (input.limitations !== undefined) patch.limitations = input.limitations;
+      if (input.isPreferred !== undefined) patch.isPreferred = input.isPreferred;
 
-    await writeAudit(tx, {
-      entityType: "model_access",
-      entityId: uuid,
-      action: "update",
-      beforeData: jsonSafe(before),
-      afterData: jsonSafe(after),
-      ctx,
+      const [after] = await tx
+        .update(schema.modelAccess)
+        .set(patch)
+        .where(eq(schema.modelAccess.id, uuid))
+        .returning();
+
+      if (!after) {
+        throw new ModelServiceError("NOT_FOUND", "Model access not found", 404);
+      }
+
+      await writeAudit(tx, {
+        entityType: "model_access",
+        entityId: uuid,
+        action: "update",
+        beforeData: jsonSafe(before),
+        afterData: jsonSafe(after),
+        ctx,
+      });
     });
-  });
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      throw new ModelServiceError("CONFLICT", "Preferred access conflict", 409);
+    }
+    throw error;
+  }
 
   return getModelDetailById(db, uuid);
 }
