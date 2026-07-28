@@ -160,7 +160,7 @@ export function ModelForm({ mode, developers, initial }: Props) {
   }
 
   async function onSubmit(values: FormValues) {
-    const nextCanonical = values.canonicalId.trim();
+    const nextCanonical = (values.canonicalId ?? "").trim();
     if (
       mode === "edit" &&
       initial?.canonicalId &&
@@ -177,7 +177,7 @@ export function ModelForm({ mode, developers, initial }: Props) {
   }
 
   function confirmCanonicalChange() {
-    const current = getValues("canonicalId").trim();
+    const current = (getValues("canonicalId") ?? "").trim();
     if (!initial?.canonicalId || current === initial.canonicalId) {
       setCanonicalWarning(null);
       setPendingCanonicalConfirm(null);
@@ -187,10 +187,10 @@ export function ModelForm({ mode, developers, initial }: Props) {
     setPendingCanonicalConfirm(current);
     setCanonicalWarning(null);
     void handleSubmit(async (values) => {
-      if (values.canonicalId.trim() !== current) {
+      if ((values.canonicalId ?? "").trim() !== current) {
         setPendingCanonicalConfirm(null);
         setCanonicalWarning(
-          `Canonical ID changed while confirmation was open. Confirm the new value “${values.canonicalId.trim()}” again.`,
+          `Canonical ID changed while confirmation was open. Confirm the new value “${(values.canonicalId ?? "").trim()}” again.`,
         );
         return;
       }
@@ -448,7 +448,7 @@ export function ModelForm({ mode, developers, initial }: Props) {
           <p id="canonical-warning-body">{canonicalWarning}</p>
           <p className="text-xs text-muted-foreground">
             Pending value to confirm:{" "}
-            <code data-testid="canonical-id-pending-value">{getValues("canonicalId").trim()}</code>
+            <code data-testid="canonical-id-pending-value">{(getValues("canonicalId") ?? "").trim()}</code>
           </p>
           <div className="flex flex-wrap gap-2">
             <button

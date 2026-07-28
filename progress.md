@@ -494,3 +494,34 @@ git -C "$REPO_DIR" checkout -- packages/database/src/seed.ts \
   packages/database/src/models.integration.test.ts
 rm -f scripts/apply-csv-migration.mts
 ```
+
+### api-models (2026-07-28T23:27Z) — RESULT=PASS
+
+#### Built
+- `GET /api/v1/models` rewritten against rankings/plans schema: server-side pagination,
+  sorting, and URL-addressable filters covering identity, status, capabilities, ratings,
+  cost/quota, and data-maintenance groups (brief §7.3).
+- List items include creator, preferred access provider/plan, workflow status, context,
+  speed, computed `overallScore` + `scoreBasis`, best skill, cost/quota summary, tags,
+  updatedAt. Overall score is weighted mean of the active ranking profile (default
+  `best-everyday`); personal wins per skill else external/10; null never becomes 0.
+- `POST /api/v1/models` accepts `{"name":"Test"}` alone (auto canonicalId + Unknown creator).
+- `POST .../archive` added; PATCH/restore/history keep archive-not-delete + audit.
+
+#### Verified
+- `pnpm lint`, `typecheck`, `test:unit`, `test:integration` all PASS.
+- New `api-models.integration.test.ts`: 17 tests (name-only, filter groups on 51 seeds,
+  pagination stability, scoreBasis=external, null-not-zero).
+- Example: `GET ?creator=anthropic&limit=2` → total 4, overallScore 8.07, scoreBasis external.
+
+#### Files
+- `packages/database/src/services/models-list.ts` (new)
+- `packages/database/src/services/models.ts`, `packages/schemas/src/{primitives,rankings}.ts`
+- `packages/database/src/api-models.integration.test.ts`
+- `apps/web/src/app/api/v1/models/[modelId]/archive/route.ts`
+- `apps/web/src/components/models/model-form.tsx` (optional canonicalId)
+
+#### Deferred / notes
+- UI still uses legacy models page; later phases rebuild table/filters against these params.
+- `subscription` query param now maps to plan (subscriptions product concept retired).
+

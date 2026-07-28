@@ -29,6 +29,15 @@ import {
 } from "./index";
 
 describe("modelWriteSchema", () => {
+  it("accepts name-only create payload", () => {
+    const parsed = modelWriteSchema.parse({ name: "Test" });
+    expect(parsed.name).toBe("Test");
+    expect(parsed.canonicalId).toBeUndefined();
+    expect(parsed.developerId).toBeUndefined();
+    expect(parsed.lifecycle).toBe("unknown");
+    expect(parsed.needsRecheck).toBe(true);
+  });
+
   it("accepts a minimal valid model write payload", () => {
     const parsed = modelWriteSchema.parse({
       canonicalId: "openai:gpt-4.1",
@@ -41,16 +50,18 @@ describe("modelWriteSchema", () => {
     expect(parsed.family).toBeUndefined();
   });
 
-  it("rejects empty canonical IDs", () => {
+  it("rejects empty canonical IDs when provided", () => {
     const result = modelWriteSchema.safeParse({
       canonicalId: "",
       name: "X",
       developerId: "11111111-1111-1111-1111-111111111111",
     });
-    expect(result.success).toBe(false);
+    // empty canonicalId is treated as omitted
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.canonicalId).toBeUndefined();
   });
 
-  it("rejects whitespace-only required strings", () => {
+  it("rejects whitespace-only required name", () => {
     const result = modelWriteSchema.safeParse({
       canonicalId: "   ",
       name: "\t",

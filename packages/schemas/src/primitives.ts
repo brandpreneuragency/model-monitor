@@ -186,11 +186,28 @@ export const modelAliasWriteSchema = z.object({
 });
 
 // ── Model write schema ─────────────────────────────────────────
+// Only `name` is required to create a model (SPEC / AGENTS incomplete-record rule).
+
+export const workflowStatusValueSchema = z.enum([
+  "active",
+  "preferred",
+  "testing",
+  "preview",
+  "legacy",
+  "deprecated",
+  "archived",
+]);
 
 export const modelWriteSchema = z.object({
-  canonicalId: requiredTrimmedString,
   name: requiredTrimmedString,
-  developerId: uuidSchema,
+  canonicalId: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? undefined : value),
+    requiredTrimmedString.optional(),
+  ),
+  developerId: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? undefined : value),
+    uuidSchema.optional(),
+  ),
   family: z.preprocess(emptyToNull, z.string().nullable().optional()),
   generation: z.preprocess(emptyToNull, z.string().nullable().optional()),
   lifecycle: lifecycleStatusSchema.default("unknown"),
@@ -208,18 +225,7 @@ export const modelWriteSchema = z.object({
   needsRecheck: z.boolean().default(true),
   isFavourite: z.boolean().optional(),
   needsReview: z.boolean().optional(),
-  workflowStatus: z
-    .enum([
-      "active",
-      "preferred",
-      "testing",
-      "preview",
-      "legacy",
-      "deprecated",
-      "archived",
-    ])
-    .nullable()
-    .optional(),
+  workflowStatus: workflowStatusValueSchema.nullable().optional(),
   capabilities: modelCapabilitiesWriteSchema.optional(),
   aliases: z.array(modelAliasWriteSchema).optional(),
 });
@@ -249,22 +255,96 @@ const booleanQuery = z
     return v === "true";
   });
 
+const optionalTrimmed = z.preprocess(
+  (value) => (value === "" || value === null || value === undefined ? undefined : value),
+  z.string().optional(),
+);
+
+const optionalNumber = z.preprocess((value) => {
+  if (value === "" || value === null || value === undefined) return undefined;
+  if (typeof value === "number") return value;
+  if (typeof value === "string" && value.trim() !== "") return Number(value);
+  return value;
+}, z.number().optional());
+
+const optionalInt = z.preprocess((value) => {
+  if (value === "" || value === null || value === undefined) return undefined;
+  if (typeof value === "number") return value;
+  if (typeof value === "string" && value.trim() !== "") return Number(value);
+  return value;
+}, z.number().int().optional());
+
+/**
+ * URL-addressable model list filters (brief §7.3 groups).
+ * Every filter is a query parameter so filtered views can be linked.
+ */
 export const modelListQuerySchema = z.object({
-  search: z.string().optional(),
-  developer: z.string().optional(),
-  family: z.string().optional(),
+  search: optionalTrimmed,
+  // Identity / taxonomy
+  creator: optionalTrimmed,
+  developer: optionalTrimmed, // alias of creator (legacy)
+  accessProvider: optionalTrimmed,
+  plan: optionalTrimmed,
+  subscription: optionalTrimmed, // legacy alias → plan
+  accessType: optionalTrimmed,
+  family: optionalTrimmed,
+  modelType: optionalTrimmed,
   lifecycle: z.preprocess(
     (value) => (value === "" || value === null || value === undefined ? undefined : value),
     lifecycleStatusSchema.optional(),
   ),
-  accessProvider: z.string().optional(),
-  subscription: z.string().optional(),
+  // Status / workflow
+  status: optionalTrimmed, // workflow_status or record status convenience
+  workflowStatus: optionalTrimmed,
   archived: booleanQuery,
+  isFavourite: booleanQuery,
+  favourite: booleanQuery, // alias
+  // Capabilities
   accessible: booleanQuery,
   vision: booleanQuery,
   reasoning: booleanQuery,
-  toolSupport: booleanQuery,
+  toolSupport: booleanQuery, // legacy
+  toolUse: booleanQuery,
+  agent: booleanQuery,
+  multimodal: booleanQuery,
+  codingSpecialist: booleanQuery,
+  longContext: booleanQuery,
+  longContextMin: optionalInt,
+  // Ratings
+  profileId: optionalTrimmed,
+  profile: optionalTrimmed, // slug or id
+  skillId: optionalTrimmed,
+  skill: optionalTrimmed, // slug or id
+  personalScoreMin: optionalNumber,
+  personalScoreMax: optionalNumber,
+  skillScoreMin: optionalNumber,
+  skillScoreMax: optionalNumber,
+  confidence: optionalTrimmed, // low|medium|high
+  rankMin: optionalInt,
+  rankMax: optionalInt,
+  tested: booleanQuery,
+  // Cost / quota convenience flags
+  free: booleanQuery,
+  subscriptionAccess: booleanQuery,
+  api: booleanQuery,
+  openWeights: booleanQuery,
+  local: booleanQuery,
+  unlimited: booleanQuery,
+  requestLimited: booleanQuery,
+  tokenLimited: booleanQuery,
+  pricingKnown: booleanQuery,
+  pricingMissing: booleanQuery,
+  // Data maintenance
   needsRecheck: booleanQuery,
+  needsReview: booleanQuery,
+  missingRating: booleanQuery,
+  missingCost: booleanQuery,
+  missingQuota: booleanQuery,
+  recentlyVerified: booleanQuery,
+  outdated: booleanQuery,
+  verifiedWithinDays: optionalInt,
+  outdatedAfterDays: optionalInt,
+  // Pagination / sort
   sort: z.string().optional().default("name"),
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(200).optional().default(50),
@@ -537,11 +617,15 @@ export function parseTriState(raw: unknown): boolean | null {
 export type ModelSortField =
   | "name"
   | "developer"
+  | "creator"
   | "family"
   | "lifecycle"
   | "context"
   | "updatedAt"
   | "verifiedAt"
+  | "overallScore"
+  | "speed"
+  | "workflowStatus"
   | "capability"
   | "balanced"
   | "value";
@@ -556,11 +640,15 @@ export function parseSortParam(sort: string | undefined): {
   const allowed: ModelSortField[] = [
     "name",
     "developer",
+    "creator",
     "family",
     "lifecycle",
     "context",
     "updatedAt",
     "verifiedAt",
+    "overallScore",
+    "speed",
+    "workflowStatus",
     "capability",
     "balanced",
     "value",

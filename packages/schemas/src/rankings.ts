@@ -203,3 +203,102 @@ export type ModelTag = z.infer<typeof modelTagSchema>;
 export type RankingSavedView = z.infer<typeof rankingSavedViewSchema>;
 export type CreateRankingSavedView = z.infer<typeof createRankingSavedViewSchema>;
 export type UpdateRankingSavedView = z.infer<typeof updateRankingSavedViewSchema>;
+
+// ── Computed overall score (never stored) ──────────────────────
+// Personal 1–10 and external 0–100. External is scaled to 0–10 so the
+// weighted mean stays on a single scale. Personal wins per skill when set.
+
+export type ScoreBasis = "personal" | "external" | "mixed";
+
+export function effectiveSkillScore(
+  personal: number | null | undefined,
+  external: number | null | undefined,
+): { score: number | null; basis: "personal" | "external" | null } {
+  if (personal !== null && personal !== undefined && !Number.isNaN(Number(personal))) {
+    return { score: Number(personal), basis: "personal" };
+  }
+  if (external !== null && external !== undefined && !Number.isNaN(Number(external))) {
+    return { score: Number(external) / 10, basis: "external" };
+  }
+  return { score: null, basis: null };
+}
+
+/**
+ * Weighted mean of profile skills. Missing scores are skipped (not zero).
+ * Returns null overallScore when no contributing skill scores exist.
+ */
+export function computeWeightedOverall(
+  items: Array<{
+    weight: number | string | null | undefined;
+    personal: number | string | null | undefined;
+    external: number | string | null | undefined;
+    skillId?: string;
+    skillName?: string | null;
+    skillSlug?: string | null;
+  }>,
+): {
+  overallScore: number | null;
+  scoreBasis: ScoreBasis | null;
+  bestSkill: {
+    skillId: string | null;
+    name: string | null;
+    slug: string | null;
+    score: number;
+    basis: "personal" | "external";
+  } | null;
+} {
+  let weightedSum = 0;
+  let weightTotal = 0;
+  let usedPersonal = 0;
+  let usedExternal = 0;
+  let best: {
+    skillId: string | null;
+    name: string | null;
+    slug: string | null;
+    score: number;
+    basis: "personal" | "external";
+  } | null = null;
+
+  for (const item of items) {
+    const w = item.weight === null || item.weight === undefined ? 0 : Number(item.weight);
+    if (!(w > 0) || Number.isNaN(w)) continue;
+    const personal =
+      item.personal === null || item.personal === undefined || item.personal === ""
+        ? null
+        : Number(item.personal);
+    const external =
+      item.external === null || item.external === undefined || item.external === ""
+        ? null
+        : Number(item.external);
+    const eff = effectiveSkillScore(
+      personal !== null && !Number.isNaN(personal) ? personal : null,
+      external !== null && !Number.isNaN(external) ? external : null,
+    );
+    if (eff.score === null || eff.basis === null) continue;
+    weightedSum += eff.score * w;
+    weightTotal += w;
+    if (eff.basis === "personal") usedPersonal += 1;
+    else usedExternal += 1;
+    if (!best || eff.score > best.score) {
+      best = {
+        skillId: item.skillId ?? null,
+        name: item.skillName ?? null,
+        slug: item.skillSlug ?? null,
+        score: eff.score,
+        basis: eff.basis,
+      };
+    }
+  }
+
+  if (weightTotal === 0) {
+    return { overallScore: null, scoreBasis: null, bestSkill: null };
+  }
+
+  const overallScore = weightedSum / weightTotal;
+  let scoreBasis: ScoreBasis;
+  if (usedPersonal > 0 && usedExternal > 0) scoreBasis = "mixed";
+  else if (usedPersonal > 0) scoreBasis = "personal";
+  else scoreBasis = "external";
+
+  return { overallScore, scoreBasis, bestSkill: best };
+}

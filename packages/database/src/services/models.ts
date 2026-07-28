@@ -3,10 +3,8 @@ import {
   asc,
   desc,
   eq,
-  ilike,
   inArray,
   sql,
-  type SQL,
 } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import {
@@ -15,19 +13,17 @@ import {
   formatScoreDisplay,
   mergeCapabilities,
   modelAliasWriteSchema,
-  modelListQuerySchema,
   modelMergeSchema,
   modelUpdateSchema,
   modelWriteSchema,
   normalizeAlias,
-  parseSortParam,
   pathUuidSchema,
   planAccessMerge,
   planAliasMerge,
   slugifyModelName,
-  type ModelListQuery,
 } from "@model-monitor/schemas";
 import * as schema from "../schema/index";
+import { listModelsEnriched, parseModelListQuery, ModelListError } from "./models-list";
 
 export type Db = PostgresJsDatabase<typeof schema>;
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -223,6 +219,9 @@ function mapModelRow(
     verificationStatus: row.verificationStatus,
     verifiedAt: toIso(row.verifiedAt),
     needsRecheck: row.needsRecheck,
+    needsReview: row.needsReview,
+    isFavourite: row.isFavourite,
+    workflowStatus: row.workflowStatus,
     status: row.status,
     archivedAt: toIso(row.archivedAt),
     mergedIntoModelId: row.mergedIntoModelId,
@@ -617,352 +616,17 @@ async function lockModelsAndRelationships(tx: Tx, modelIds: string[]) {
   `);
 }
 
-export function parseModelListQuery(input: unknown): ModelListQuery {
-  const parsed = modelListQuerySchema.safeParse(input);
-  if (!parsed.success) {
-    throw new ModelServiceError(
-      "VALIDATION_ERROR",
-      "Invalid model list query",
-      400,
-      fieldErrorsFromZod(parsed.error.flatten().fieldErrors),
-    );
-  }
-  return parsed.data;
-}
-
-function latestScoreSql(scoreType: string): SQL {
-  return sql`(
-    SELECT ms.score_value::double precision
-    FROM model_scores ms
-    WHERE ms.model_id = ${schema.models.id}
-      AND ms.score_type = ${scoreType}
-    ORDER BY ms.calculated_at DESC, ms.id DESC
-    LIMIT 1
-  )`;
-}
+export { parseModelListQuery };
 
 export async function listModels(db: Db, rawQuery: unknown) {
-  const query = parseModelListQuery(rawQuery);
-  const { field, direction } = parseSortParam(query.sort);
-  const limit = query.limit ?? 50;
-  const page = query.page ?? 1;
-  const offset = query.cursor
-    ? Number.parseInt(Buffer.from(query.cursor, "base64url").toString("utf8"), 10) || 0
-    : (page - 1) * limit;
-
-  const conditions: SQL[] = [];
-
-  if (query.archived === true) {
-    conditions.push(eq(schema.models.status, "archived"));
-  } else if (query.archived === false || query.archived === undefined) {
-    conditions.push(eq(schema.models.status, "active"));
-  }
-
-  if (query.search?.trim()) {
-    const term = `%${query.search.trim()}%`;
-    conditions.push(
-      sql`(
-        ${schema.models.name} ILIKE ${term}
-        OR ${schema.models.canonicalId} ILIKE ${term}
-        OR ${schema.models.family} ILIKE ${term}
-        OR EXISTS (
-          SELECT 1 FROM model_aliases ma
-          WHERE ma.model_id = ${schema.models.id}
-            AND (ma.alias ILIKE ${term} OR ma.normalized_alias ILIKE ${term})
-        )
-        OR EXISTS (
-          SELECT 1 FROM developers d2
-          WHERE d2.id = ${schema.models.developerId}
-            AND (d2.name ILIKE ${term} OR d2.slug ILIKE ${term})
-        )
-        OR EXISTS (
-          SELECT 1 FROM model_access mac
-          JOIN plans p ON p.id = mac.plan_id
-          JOIN access_providers ap ON ap.id = p.access_provider_id
-          WHERE mac.model_id = ${schema.models.id}
-            AND mac.status = 'active'
-            AND (ap.name ILIKE ${term} OR ap.slug ILIKE ${term})
-        )
-      )`,
-    );
-  }
-
-  if (query.developer?.trim()) {
-    const d = query.developer.trim();
-    conditions.push(
-      sql`EXISTS (
-        SELECT 1 FROM developers d
-        WHERE d.id = ${schema.models.developerId}
-          AND (d.slug = ${d} OR d.name ILIKE ${`%${d}%`} OR d.id::text = ${d})
-      )`,
-    );
-  }
-
-  if (query.family?.trim()) {
-    conditions.push(ilike(schema.models.family, query.family.trim()));
-  }
-
-  if (query.lifecycle?.trim()) {
-    conditions.push(eq(schema.models.lifecycle, query.lifecycle.trim() as typeof schema.models.$inferSelect.lifecycle));
-  }
-
-  if (query.needsRecheck !== undefined) {
-    conditions.push(eq(schema.models.needsRecheck, query.needsRecheck));
-  }
-
-  if (query.accessProvider?.trim()) {
-    const ap = query.accessProvider.trim();
-    conditions.push(
-      sql`EXISTS (
-        SELECT 1 FROM model_access mac
-        JOIN plans p ON p.id = mac.plan_id
-        JOIN access_providers prov ON prov.id = p.access_provider_id
-        WHERE mac.model_id = ${schema.models.id}
-          AND mac.status = 'active'
-          AND (prov.slug = ${ap} OR prov.name ILIKE ${`%${ap}%`})
-      )`,
-    );
-  }
-
-  if (query.subscription?.trim()) {
-    const sub = query.subscription.trim();
-    conditions.push(
-      sql`EXISTS (
-        SELECT 1 FROM model_access mac
-        JOIN plans p ON p.id = mac.plan_id
-        JOIN subscriptions s ON s.plan_id = p.id
-        WHERE mac.model_id = ${schema.models.id}
-          AND mac.status = 'active'
-          AND (s.id::text = ${sub} OR s.account_label ILIKE ${`%${sub}%`} OR s.external_seed_id = ${sub})
-      )`,
-    );
-  }
-
-  if (query.accessible === true) {
-    conditions.push(
-      sql`EXISTS (
-        SELECT 1 FROM model_access mac
-        WHERE mac.model_id = ${schema.models.id}
-          AND mac.status = 'active'
-          AND mac.availability = 'confirmed'
-      )`,
-    );
-  } else if (query.accessible === false) {
-    conditions.push(
-      sql`NOT EXISTS (
-        SELECT 1 FROM model_access mac
-        WHERE mac.model_id = ${schema.models.id}
-          AND mac.status = 'active'
-          AND mac.availability = 'confirmed'
-      )`,
-    );
-  }
-
-  if (query.vision !== undefined) {
-    conditions.push(
-      sql`EXISTS (
-        SELECT 1 FROM model_capabilities mc
-        WHERE mc.model_id = ${schema.models.id}
-          AND mc.vision = ${query.vision}
-      )`,
-    );
-  }
-  if (query.reasoning !== undefined) {
-    conditions.push(
-      sql`EXISTS (
-        SELECT 1 FROM model_capabilities mc
-        WHERE mc.model_id = ${schema.models.id}
-          AND mc.reasoning = ${query.reasoning}
-      )`,
-    );
-  }
-  if (query.toolSupport !== undefined) {
-    conditions.push(
-      sql`EXISTS (
-        SELECT 1 FROM model_capabilities mc
-        WHERE mc.model_id = ${schema.models.id}
-          AND mc.tool_use = ${query.toolSupport}
-      )`,
-    );
-  }
-
-  const whereExpr = conditions.length ? and(...conditions) : undefined;
-
-  const dirFn = direction === "desc" ? desc : asc;
-  let orderBy: SQL;
-  const scoreSortFields = new Set(["capability", "balanced", "value"]);
-  if (scoreSortFields.has(field)) {
-    const scoreExpr = latestScoreSql(field);
-    // Global DB-side ordering before limit/offset; nulls last; deterministic id tie-break.
-    orderBy =
-      direction === "desc"
-        ? sql`${scoreExpr} DESC NULLS LAST`
-        : sql`${scoreExpr} ASC NULLS LAST`;
-  } else {
-    switch (field) {
-      case "developer":
-        orderBy = dirFn(schema.developers.name);
-        break;
-      case "family":
-        orderBy = dirFn(schema.models.family);
-        break;
-      case "lifecycle":
-        orderBy = dirFn(schema.models.lifecycle);
-        break;
-      case "context":
-        orderBy = dirFn(schema.models.contextTokens);
-        break;
-      case "updatedAt":
-        orderBy = dirFn(schema.models.updatedAt);
-        break;
-      case "verifiedAt":
-        orderBy = dirFn(schema.models.verifiedAt);
-        break;
-      case "name":
-      default:
-        orderBy = dirFn(schema.models.name);
-        break;
+  try {
+    return await listModelsEnriched(db, rawQuery);
+  } catch (error) {
+    if (error instanceof ModelListError) {
+      throw new ModelServiceError(error.code, error.message, error.status, error.fieldErrors);
     }
+    throw error;
   }
-
-  const countRows = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(schema.models)
-    .innerJoin(schema.developers, eq(schema.models.developerId, schema.developers.id))
-    .where(whereExpr);
-  const total = countRows[0]?.count ?? 0;
-
-  const rows = await db
-    .select({
-      model: schema.models,
-      developerName: schema.developers.name,
-      developerSlug: schema.developers.slug,
-      capabilities: schema.modelCapabilities,
-    })
-    .from(schema.models)
-    .innerJoin(schema.developers, eq(schema.models.developerId, schema.developers.id))
-    .leftJoin(schema.modelCapabilities, eq(schema.modelCapabilities.modelId, schema.models.id))
-    .where(whereExpr)
-    .orderBy(orderBy, asc(schema.models.id))
-    .limit(limit + 1)
-    .offset(offset);
-
-  const pageRows = rows.slice(0, limit);
-  const hasMore = rows.length > limit;
-  const modelIds = pageRows.map((r) => r.model.id);
-
-  const scoreRows =
-    modelIds.length === 0
-      ? []
-      : await db
-          .select({
-            modelId: schema.modelScores.modelId,
-            scoreType: schema.modelScores.scoreType,
-            scoreValue: schema.modelScores.scoreValue,
-            rankValue: schema.modelScores.rankValue,
-            calculatedAt: schema.modelScores.calculatedAt,
-            methodologyVersion: schema.scoreMethodologies.version,
-            methodologyName: schema.scoreMethodologies.name,
-          })
-          .from(schema.modelScores)
-          .innerJoin(
-            schema.scoreMethodologies,
-            eq(schema.modelScores.methodologyId, schema.scoreMethodologies.id),
-          )
-          .where(inArray(schema.modelScores.modelId, modelIds))
-          .orderBy(desc(schema.modelScores.calculatedAt), desc(schema.modelScores.id));
-
-  const latestScores = new Map<string, typeof scoreRows>();
-  for (const s of scoreRows) {
-    const list = latestScores.get(s.modelId) ?? [];
-    if (list.some((x) => x.scoreType === s.scoreType)) continue;
-    list.push(s);
-    latestScores.set(s.modelId, list);
-  }
-
-  const accessRows =
-    modelIds.length === 0
-      ? []
-      : await db
-          .select({
-            modelId: schema.modelAccess.modelId,
-            providerName: schema.accessProviders.name,
-          })
-          .from(schema.modelAccess)
-          .innerJoin(schema.plans, eq(schema.modelAccess.planId, schema.plans.id))
-          .innerJoin(
-            schema.accessProviders,
-            eq(schema.plans.accessProviderId, schema.accessProviders.id),
-          )
-          .where(
-            and(
-              inArray(schema.modelAccess.modelId, modelIds),
-              eq(schema.modelAccess.status, "active"),
-            ),
-          );
-
-  const accessMap = new Map<string, string[]>();
-  for (const a of accessRows) {
-    const list = accessMap.get(a.modelId) ?? [];
-    if (!list.includes(a.providerName)) list.push(a.providerName);
-    accessMap.set(a.modelId, list);
-  }
-
-  const aliasRows =
-    modelIds.length === 0
-      ? []
-      : await db
-          .select({
-            id: schema.modelAliases.id,
-            modelId: schema.modelAliases.modelId,
-            alias: schema.modelAliases.alias,
-            aliasType: schema.modelAliases.aliasType,
-            accessProviderId: schema.modelAliases.accessProviderId,
-          })
-          .from(schema.modelAliases)
-          .where(inArray(schema.modelAliases.modelId, modelIds));
-
-  const aliasMap = new Map<
-    string,
-    Array<{ id: string; alias: string; aliasType: string; accessProviderId: string | null }>
-  >();
-  for (const a of aliasRows) {
-    const list = aliasMap.get(a.modelId) ?? [];
-    list.push({
-      id: a.id,
-      alias: a.alias,
-      aliasType: a.aliasType,
-      accessProviderId: a.accessProviderId,
-    });
-    aliasMap.set(a.modelId, list);
-  }
-
-  const data = pageRows.map((r) =>
-    mapModelRow(r.model, {
-      developerName: r.developerName,
-      developerSlug: r.developerSlug,
-      capabilities: r.capabilities,
-      scores: latestScores.get(r.model.id) ?? [],
-      accessProviders: accessMap.get(r.model.id) ?? [],
-      aliases: aliasMap.get(r.model.id) ?? [],
-    }),
-  );
-
-  const nextOffset = offset + limit;
-  const nextCursor = hasMore
-    ? Buffer.from(String(nextOffset), "utf8").toString("base64url")
-    : null;
-
-  return {
-    data,
-    page: {
-      nextCursor,
-      hasMore,
-      total,
-      page,
-      pageSize: limit,
-    },
-  };
 }
 
 export async function getModelById(db: DbOrTx, modelId: string) {
@@ -1194,6 +858,54 @@ export async function listDevelopers(db: Db) {
     .orderBy(asc(schema.developers.name));
 }
 
+async function ensureUnknownDeveloper(db: DbOrTx): Promise<string> {
+  const [existing] = await db
+    .select({ id: schema.developers.id })
+    .from(schema.developers)
+    .where(eq(schema.developers.slug, "unknown"))
+    .limit(1);
+  if (existing) return existing.id;
+
+  try {
+    const [created] = await db
+      .insert(schema.developers)
+      .values({
+        name: "Unknown",
+        slug: "unknown",
+        notes: "Placeholder creator for incomplete model records",
+        status: "active",
+      })
+      .returning({ id: schema.developers.id });
+    return created.id;
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      const [again] = await db
+        .select({ id: schema.developers.id })
+        .from(schema.developers)
+        .where(eq(schema.developers.slug, "unknown"))
+        .limit(1);
+      if (again) return again.id;
+    }
+    throw error;
+  }
+}
+
+async function ensureUniqueCanonicalId(db: DbOrTx, base: string): Promise<string> {
+  let candidate = base.slice(0, 180) || `local:${crypto.randomUUID().slice(0, 8)}`;
+  let attempt = 0;
+  while (attempt < 50) {
+    const [existing] = await db
+      .select({ id: schema.models.id })
+      .from(schema.models)
+      .where(eq(schema.models.canonicalId, candidate))
+      .limit(1);
+    if (!existing) return candidate;
+    attempt += 1;
+    candidate = `${base.slice(0, 160)}-${attempt}`;
+  }
+  return `${base.slice(0, 140)}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
 export async function createModel(
   db: Db,
   rawInput: unknown,
@@ -1210,29 +922,40 @@ export async function createModel(
   }
   const input = parsed.data;
 
-  const [dev] = await db
-    .select({ id: schema.developers.id })
-    .from(schema.developers)
-    .where(eq(schema.developers.id, input.developerId))
-    .limit(1);
-  if (!dev) {
-    throw new ModelServiceError("VALIDATION_ERROR", "Developer not found", 400, {
-      developerId: ["Developer not found"],
-    });
+  let developerId = input.developerId;
+  if (developerId) {
+    const [dev] = await db
+      .select({ id: schema.developers.id })
+      .from(schema.developers)
+      .where(eq(schema.developers.id, developerId))
+      .limit(1);
+    if (!dev) {
+      throw new ModelServiceError("VALIDATION_ERROR", "Developer not found", 400, {
+        developerId: ["Developer not found"],
+      });
+    }
+  } else {
+    developerId = await ensureUnknownDeveloper(db);
   }
 
-  const [existingCanonical] = await db
-    .select({ id: schema.models.id })
-    .from(schema.models)
-    .where(eq(schema.models.canonicalId, input.canonicalId))
-    .limit(1);
-  if (existingCanonical) {
-    throw new ModelServiceError(
-      "CONFLICT",
-      "A model with this canonical ID already exists",
-      409,
-      { canonicalId: ["Canonical ID must be unique"] },
-    );
+  let canonicalId = input.canonicalId?.trim();
+  if (!canonicalId) {
+    const base = slugifyModelName(input.name) || "model";
+    canonicalId = await ensureUniqueCanonicalId(db, `local:${base}`);
+  } else {
+    const [existingCanonical] = await db
+      .select({ id: schema.models.id })
+      .from(schema.models)
+      .where(eq(schema.models.canonicalId, canonicalId))
+      .limit(1);
+    if (existingCanonical) {
+      throw new ModelServiceError(
+        "CONFLICT",
+        "A model with this canonical ID already exists",
+        409,
+        { canonicalId: ["Canonical ID must be unique"] },
+      );
+    }
   }
 
   try {
@@ -1241,8 +964,8 @@ export async function createModel(
       const [created] = await tx
         .insert(schema.models)
         .values({
-          developerId: input.developerId,
-          canonicalId: input.canonicalId,
+          developerId,
+          canonicalId,
           name: input.name,
           slug,
           family: input.family ?? null,
@@ -1260,6 +983,9 @@ export async function createModel(
           maxOutputTokens: input.maxOutputTokens ?? null,
           speedRating: input.speedRating ?? null,
           needsRecheck: input.needsRecheck,
+          isFavourite: input.isFavourite ?? false,
+          needsReview: input.needsReview ?? false,
+          workflowStatus: input.workflowStatus ?? null,
           status: "active",
         })
         .returning();
@@ -1426,6 +1152,9 @@ export async function updateModel(
       if (input.maxOutputTokens !== undefined) patch.maxOutputTokens = input.maxOutputTokens;
       if (input.speedRating !== undefined) patch.speedRating = input.speedRating;
       if (input.needsRecheck !== undefined) patch.needsRecheck = input.needsRecheck;
+      if (input.isFavourite !== undefined) patch.isFavourite = input.isFavourite;
+      if (input.needsReview !== undefined) patch.needsReview = input.needsReview;
+      if (input.workflowStatus !== undefined) patch.workflowStatus = input.workflowStatus;
 
       const [updated] = await tx
         .update(schema.models)
