@@ -708,14 +708,21 @@ async function main() {
     // Test-only overrides force the real count/cost assertion path (not only injected throws).
     const expectModels = Number(process.env.MM_SEED_EXPECT_MODELS ?? 51);
     const expectSubs = Number(process.env.MM_SEED_EXPECT_SUBS ?? 4);
-    const expectAccess = Number(process.env.MM_SEED_EXPECT_ACCESS ?? 19);
+    // Baseline seed alone → 19; after csv-migration on same subscription plans → 23.
+    const expectAccessExact = process.env.MM_SEED_EXPECT_ACCESS
+      ? Number(process.env.MM_SEED_EXPECT_ACCESS)
+      : null;
     const expectBenches = Number(process.env.MM_SEED_EXPECT_BENCHES ?? 276);
     const expectUsage = Number(process.env.MM_SEED_EXPECT_USAGE ?? 4);
     const expectCost = Number(process.env.MM_SEED_EXPECT_COST ?? 61);
+    const accessOk =
+      expectAccessExact !== null
+        ? stats.modelAccess === expectAccessExact
+        : stats.modelAccess === 19 || stats.modelAccess === 23;
     const allCorrect =
       stats.models === expectModels &&
       stats.subscriptions === expectSubs &&
-      stats.modelAccess === expectAccess &&
+      accessOk &&
       stats.benchmarks === expectBenches &&
       stats.mockUsage === expectUsage &&
       stats.monthlyCost === expectCost;
@@ -750,7 +757,7 @@ async function main() {
   console.log("\n── Seed verification (baseline-owned only) ──");
   console.log(`  Active baseline models:          ${seedStats.models} (expected 51)`);
   console.log(`  Active baseline subscriptions:   ${seedStats.subscriptions} (expected 4)`);
-  console.log(`  Active baseline model access:    ${seedStats.modelAccess} (expected 19)`);
+  console.log(`  Active baseline model access:    ${seedStats.modelAccess} (expected 19 baseline / 23 post-csv-migration)`);
   console.log(`  Baseline-owned benchmarks:       ${seedStats.benchmarks} (expected 276)`);
   console.log(`  Baseline-owned mock usage:       ${seedStats.mockUsage} (expected 4)`);
   console.log(`  Baseline developers:             ${seedStats.developers}`);

@@ -453,3 +453,44 @@ PATH="$HOME/.local/bin:$PATH" pnpm install
 ```
 
 Evidence: `$RUN_DIR/csv-importer.txt` — `RESULT=PASS`.
+
+### csv-migration (2026-07-28T22:40Z) — RESULT=PASS
+
+#### Built
+- `scripts/apply-csv-migration.mts` — one-transaction apply of `parseMasterCsv()` + default seeds.
+- Applied to **both** `modelmonitor` and `modelmonitor_test`.
+- Pre-migration dump: `/home/admin/01_atlas/05_backups/model-monitor-csv-migration-20260728T222751Z.sql.gz` (116245 B).
+
+#### Data written (prod)
+- JOIN=51/51 on `models.name`
+- Providers: +6 new (10 total; OpenAI→ChatGPT/Codex, OpenCode, xAI→Grok aliases)
+- Plans: +14 route plans (18 total)
+- Active `model_access`: 74; MODELS_WITHOUT_ACCESS=0
+- `plan_quotas`: 4 (ChatGPT 5h window; OpenCode Go 5h/weekly/monthly)
+- Skills=16, ratings=816, PERSONAL_SCORES_SET=0, PROFILES=10, saved_views=15, tags=16
+- Benchmark results +155 CSV-keyed (431 total); sources +153
+- Provenance rows: 409; import_job committed
+- QC notes / composites in `models.metadata.csvMigration` (no `models.notes` column)
+- Superseded null-`provider_model_id` access rows on same plan **archived** (additive)
+
+#### Test expectation updates
+- seed-integrity subscription-linked access 19→23 (GPT-5.4/mini/5.5 + Qwen3.6 Plus on seed plans)
+- models.integration non-test active access 19→74
+- `seed.ts` accepts access 19 (fresh baseline) or 23 (post-csv)
+
+#### Verified
+- `pnpm lint` 0; `pnpm typecheck` 0; `pnpm test:integration` 0 (70 pass / 2 skip)
+- OLD_APP: 7 containers; `/` 307 → `/login?callbackUrl=%2F`; `/login` 200
+- Evidence: `$RUN_DIR/csv-migration.txt` RESULT=PASS
+
+#### Deferred
+- None for this phase. API surfaces consume the seeded data in later phases.
+
+#### Rollback (this phase only)
+```
+# restore dump on BOTH dbs, then:
+git -C "$REPO_DIR" checkout -- packages/database/src/seed.ts \
+  packages/database/src/seed-integrity.test.ts \
+  packages/database/src/models.integration.test.ts
+rm -f scripts/apply-csv-migration.mts
+```

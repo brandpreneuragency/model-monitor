@@ -68,7 +68,9 @@ async function main() {
 
   await assertEqual("canonical models", Number(counts.models), 51);
   await assertEqual("subscriptions", Number(counts.subscriptions), 4);
-  await assertEqual("model access", Number(counts.model_access), 19);
+  // Baseline seed had 19 access rows on subscription plans. csv-migration added 4 more
+  // CSV-covered models onto those same plans (GPT-5.4 / mini / 5.5, Qwen3.6 Plus) → 23.
+  await assertEqual("model access", Number(counts.model_access), 23);
   await assertEqual("baseline benchmark rows", Number(counts.benchmarks), 276);
   await assertEqual("capabilities", Number(counts.capabilities), 51);
   await assertEqual("baseline mock usage snapshots", Number(counts.mock_usage), 4);

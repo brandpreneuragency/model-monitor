@@ -972,7 +972,8 @@ describe("seed integrity remains", () => {
     `;
     expect(Number(counts.models)).toBe(51);
     expect(Number(counts.subscriptions)).toBe(4);
-    expect(Number(counts.model_access)).toBe(19);
+    // After csv-migration every model has ≥1 active access route (74 non-test rows).
+    expect(Number(counts.model_access)).toBe(74);
     expect(Number(counts.benchmarks)).toBe(276);
   });
 });
