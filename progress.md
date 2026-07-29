@@ -723,3 +723,46 @@ git checkout -- apps/web/src apps/web/package.json pnpm-lock.yaml
 
 Evidence: `$RUN_DIR/shell.txt` — `RESULT=PASS`.
 
+
+### models-table (2026-07-29T01:00Z) — RESULT=PASS
+
+#### Built
+- Models table as primary working surface:
+  - `apps/web/src/components/models/models-columns.tsx` — default + optional column defs
+  - `apps/web/src/components/models/models-table.tsx` — client table, pagination, sort,
+    column picker, compare selection (max 4), row→drawer
+  - `apps/web/src/app/models/page.tsx` — server component fetches first page via `listModels`
+- Enhanced `packages/ui` `DataTable`: sticky left columns, `manualSorting`, `onRowClick`,
+  sticky selection column.
+
+#### Default columns
+selection, Model (creator sub-line + favourite star), Creator, Access Provider, Plan,
+Status, Context, Speed, Overall Score, Best Skill, Cost / Quota, Tags, Updated.
+
+#### Verified
+- Dev server on :3001: `/models` 200 with `51 models`; API pages 1–3 yield 20+20+11 unique
+  ids → `ROWS=51`.
+- Token grep on `apps/web/src/components/models/` empty → `NO_RAW_HEX=PASS`.
+- `pnpm lint` / `typecheck` / `test:unit` PASS.
+- Screenshot `02-models-table-drawer.png` viewed (vision); mockup is contract.
+
+#### Notes / deferred
+- Filters stay for models-filters phase (chrome only here).
+- Cards view empty-state placeholder until models-cards.
+- Drawer body is a list-field snapshot until model-drawer phase.
+- Screenshot footer said “up to 20 to compare”; phase/compare tray max is **4** — followed
+  phase and left a notice on the 5th selection attempt.
+- Creator sub-line under Model name is per phase prompt (screenshot shows Creator column only).
+
+#### Files
+- `apps/web/src/components/models/models-table.tsx` (new)
+- `apps/web/src/components/models/models-columns.tsx` (new)
+- `apps/web/src/app/models/page.tsx`
+- `packages/ui/src/data-table.tsx`
+
+#### Rollback (this phase only)
+```
+git checkout -- apps/web/src packages/ui/src/data-table.tsx
+```
+
+Evidence: `$RUN_DIR/models-table.txt` — `RESULT=PASS`.

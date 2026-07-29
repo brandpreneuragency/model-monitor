@@ -6,6 +6,7 @@ import {
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
+  type ColumnMeta,
   type OnChangeFn,
   type RowSelectionState,
   type SortingState,
@@ -16,6 +17,17 @@ import { fontBody, fontMeta } from "./styles";
 import type { Density } from "./types";
 import { densityRowHeight } from "./types";
 
+export type DataTableColumnMeta = ColumnMeta<unknown, unknown> & {
+  /** Stick this column to the left while scrolling horizontally. */
+  sticky?: "left";
+  /** Extra left offset (px) when stacking multiple sticky columns. */
+  stickyOffset?: number;
+  /** Minimum width hint. */
+  minWidth?: number | string;
+  /** Column width hint. */
+  width?: number | string;
+};
+
 export interface DataTableProps<T> {
   data: T[];
   columns: ColumnDef<T, unknown>[];
@@ -25,12 +37,19 @@ export interface DataTableProps<T> {
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   sorting?: SortingState;
   onSortingChange?: OnChangeFn<SortingState>;
+  /** When true, sorting is controlled externally (server-side). */
+  manualSorting?: boolean;
   getRowId?: (originalRow: T, index: number) => string;
   emptyMessage?: ReactNode;
   className?: string;
   style?: CSSProperties;
+  onRowClick?: (row: T) => void;
+  /** Sticky the selection checkbox column when selection is enabled. */
+  stickySelection?: boolean;
   "data-testid"?: string;
 }
+
+const SELECTION_COL_WIDTH = 40;
 
 export function DataTable<T>({
   data,
@@ -41,10 +60,13 @@ export function DataTable<T>({
   onRowSelectionChange,
   sorting: controlledSorting,
   onSortingChange,
+  manualSorting = false,
   getRowId,
   emptyMessage = "No rows",
   className,
   style,
+  onRowClick,
+  stickySelection = true,
   "data-testid": testId = "data-table",
 }: DataTableProps<T>) {
   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
@@ -68,7 +90,8 @@ export function DataTable<T>({
     onRowSelectionChange: enableSelection ? setRowSelection : undefined,
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    getSortedRowModel: manualSorting ? undefined : getSortedRowModel(),
+    manualSorting,
     getRowId,
   });
 
@@ -84,30 +107,68 @@ export function DataTable<T>({
     ...style,
   };
 
-  const th: CSSProperties = {
+  const thBase: CSSProperties = {
     ...fontMeta,
     position: "sticky",
     top: 0,
-    zIndex: 1,
+    zIndex: 2,
     textAlign: "left",
     color: "var(--text-muted)",
     background: "var(--bg-card)",
     borderBottom: "1px solid var(--border)",
     padding: "0 var(--space-3)",
-    height: rowHeight,
-    fontWeight: 600,
+    height: 40,
+    fontWeight: 500,
     whiteSpace: "nowrap",
     boxShadow: "none",
   };
 
-  const td: CSSProperties = {
+  const tdBase: CSSProperties = {
     ...fontBody,
     color: "var(--text)",
     padding: "0 var(--space-3)",
     height: rowHeight,
     borderBottom: "1px solid var(--border-subtle)",
     verticalAlign: "middle",
+    background: "inherit",
   };
+
+  function readMeta(
+    meta: unknown,
+  ): DataTableColumnMeta | undefined {
+    if (!meta || typeof meta !== "object") return undefined;
+    const m = meta as {
+      sticky?: unknown;
+      stickyOffset?: unknown;
+      minWidth?: unknown;
+      width?: unknown;
+    };
+    const out: DataTableColumnMeta = {};
+    if (m.sticky === "left") out.sticky = "left";
+    if (typeof m.stickyOffset === "number") out.stickyOffset = m.stickyOffset;
+    if (typeof m.minWidth === "number" || typeof m.minWidth === "string") {
+      out.minWidth = m.minWidth;
+    }
+    if (typeof m.width === "number" || typeof m.width === "string") {
+      out.width = m.width;
+    }
+    return out;
+  }
+
+  function stickyStyle(
+    meta: DataTableColumnMeta | undefined,
+    kind: "th" | "td",
+    extraLeft = 0,
+  ): CSSProperties {
+    if (meta?.sticky !== "left") return {};
+    const offset = (meta.stickyOffset ?? 0) + extraLeft;
+    return {
+      position: "sticky",
+      left: offset,
+      zIndex: kind === "th" ? 4 : 3,
+      background: "var(--bg-card)",
+    };
+  }
 
   return (
     <div
@@ -119,7 +180,8 @@ export function DataTable<T>({
       <table
         style={{
           width: "100%",
-          borderCollapse: "collapse",
+          borderCollapse: "separate",
+          borderSpacing: 0,
           tableLayout: "auto",
         }}
       >
@@ -127,7 +189,21 @@ export function DataTable<T>({
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id}>
               {enableSelection ? (
-                <th style={{ ...th, width: 40 }}>
+                <th
+                  style={{
+                    ...thBase,
+                    width: SELECTION_COL_WIDTH,
+                    minWidth: SELECTION_COL_WIDTH,
+                    ...(stickySelection
+                      ? {
+                          position: "sticky",
+                          left: 0,
+                          zIndex: 5,
+                          background: "var(--bg-card)",
+                        }
+                      : null),
+                  }}
+                >
                   <input
                     type="checkbox"
                     aria-label="Select all rows"
@@ -138,14 +214,30 @@ export function DataTable<T>({
                       }
                     }}
                     onChange={table.getToggleAllRowsSelectedHandler()}
+                    onClick={(e) => e.stopPropagation()}
                   />
                 </th>
               ) : null}
               {hg.headers.map((header) => {
+                const meta = readMeta(header.column.columnDef.meta);
                 const canSort = header.column.getCanSort();
                 const sorted = header.column.getIsSorted();
+                const sticky = stickyStyle(
+                  meta,
+                  "th",
+                  enableSelection && stickySelection ? SELECTION_COL_WIDTH : 0,
+                );
                 return (
-                  <th key={header.id} style={th} colSpan={header.colSpan}>
+                  <th
+                    key={header.id}
+                    style={{
+                      ...thBase,
+                      ...sticky,
+                      width: meta?.width,
+                      minWidth: meta?.minWidth,
+                    }}
+                    colSpan={header.colSpan}
+                  >
                     {header.isPlaceholder ? null : (
                       <button
                         type="button"
@@ -190,7 +282,7 @@ export function DataTable<T>({
               <td
                 colSpan={columns.length + (enableSelection ? 1 : 0)}
                 style={{
-                  ...td,
+                  ...tdBase,
                   textAlign: "center",
                   color: "var(--text-muted)",
                   height: "var(--row-comfortable)",
@@ -202,47 +294,95 @@ export function DataTable<T>({
           ) : (
             table.getRowModel().rows.map((row) => {
               const selected = row.getIsSelected();
+              const rowBg = selected
+                ? "var(--bg-row-selected)"
+                : "var(--bg-card)";
               return (
                 <tr
                   key={row.id}
                   data-selected={selected || undefined}
+                  data-testid="data-table-row"
                   style={{
-                    background: selected
-                      ? "var(--bg-row-selected)"
-                      : "transparent",
+                    background: rowBg,
+                    cursor: onRowClick ? "pointer" : undefined,
                     boxShadow: selected
                       ? "inset 3px 0 0 0 var(--accent)"
                       : undefined,
                   }}
+                  onClick={() => onRowClick?.(row.original)}
                   onMouseEnter={(e) => {
                     if (!selected) {
                       e.currentTarget.style.background = "var(--bg-row-hover)";
+                      e.currentTarget
+                        .querySelectorAll<HTMLElement>("[data-sticky-cell]")
+                        .forEach((cell) => {
+                          cell.style.background = "var(--bg-row-hover)";
+                        });
                     }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = selected
-                      ? "var(--bg-row-selected)"
-                      : "transparent";
+                    e.currentTarget.style.background = rowBg;
+                    e.currentTarget
+                      .querySelectorAll<HTMLElement>("[data-sticky-cell]")
+                      .forEach((cell) => {
+                        cell.style.background = rowBg;
+                      });
                   }}
                 >
                   {enableSelection ? (
-                    <td style={td}>
+                    <td
+                      data-sticky-cell={stickySelection || undefined}
+                      style={{
+                        ...tdBase,
+                        background: rowBg,
+                        ...(stickySelection
+                          ? {
+                              position: "sticky",
+                              left: 0,
+                              zIndex: 2,
+                            }
+                          : null),
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         aria-label="Select row"
                         checked={selected}
                         onChange={row.getToggleSelectedHandler()}
+                        onClick={(e) => e.stopPropagation()}
                       />
                     </td>
                   ) : null}
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} style={td}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const meta = readMeta(cell.column.columnDef.meta);
+                    const sticky = stickyStyle(
+                      meta,
+                      "td",
+                      enableSelection && stickySelection
+                        ? SELECTION_COL_WIDTH
+                        : 0,
+                    );
+                    const isSticky = meta?.sticky === "left";
+                    return (
+                      <td
+                        key={cell.id}
+                        data-sticky-cell={isSticky || undefined}
+                        style={{
+                          ...tdBase,
+                          background: rowBg,
+                          ...sticky,
+                          width: meta?.width,
+                          minWidth: meta?.minWidth,
+                        }}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })
