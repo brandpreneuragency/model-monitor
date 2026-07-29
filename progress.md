@@ -1033,3 +1033,34 @@ Evidence: `$RUN_DIR/rankings-page.txt` — `RESULT=PASS`.
 git checkout -- apps/web/src
 ```
 
+
+### overview-page (2026-07-29T03:14Z) — RESULT=PASS
+
+#### Screenshot
+- SCREENSHOT_VIEWED=YES via vision_analyze on `$PLAN_DIR/screenshots/01-overview-and-models.png`.
+- Mockup (`docs/design/overview.html`) is the contract. Screenshot corroborates KPI row,
+  My Access + Skill Leaders, distribution/scatter/recent row, Quota Summary rail.
+- Discrepancy: mockup decorative skill radar omitted (no multi-skill vector on overview
+  skill-leaders API); top-three + 8 category chips implemented per brief/SPEC.
+
+#### Built
+- `apps/web/src/app/page.tsx` — loads `getOverviewSummary|Access|SkillLeaders|
+  ProviderDistribution|Quotas|Recent|Scatter` and renders `OverviewPageClient`.
+- `apps/web/src/components/overview/*` — summary sparklines, access cards, skill leaders,
+  provider bars, capability-vs-cost scatter (axis selector → `/api/v1/overview/scatter`),
+  quota summary rail, recently updated.
+- Unit tests: 11 (sections from API data, empty states, scatter param change).
+
+#### Verified
+- SQL vs service/rendered: active 51, providers 10, paid 4 ($61/mo), needs review 21,
+  distribution totals sum 74 — MATCH.
+- Fixture grep clean → `NO_FIXTURES=PASS`
+- Raw-hex grep empty → `NO_RAW_HEX=PASS`
+- `pnpm lint` / `typecheck` / `test:unit` EXIT=0 (web 127 tests; overview 11)
+
+#### Rollback (this phase only)
+```
+git checkout -- apps/web/src
+```
+
+Evidence: `$RUN_DIR/overview-page.txt` — `RESULT=PASS`.
