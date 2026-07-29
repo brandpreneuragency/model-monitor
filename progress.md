@@ -975,3 +975,30 @@ git checkout -- apps/web/src
 ```
 
 Evidence: `$RUN_DIR/rankings-page.txt` — `RESULT=PASS`.
+
+### rankings-charts (2026-07-29T02:48Z) — RESULT=PASS
+
+#### Screenshot
+- SCREENSHOT_VIEWED=YES via vision_analyze on `$PLAN_DIR/screenshots/03-rankings.png`.
+- Mockup (`docs/design/rankings.html`) remains the contract; screenshot corroborates Skill
+  Radar placement beside the score matrix (Top-N, legend, multi-series). Scatter and
+  side-by-side are SPEC/PLAN visual comparisons not shown on that screenshot; no conflict.
+
+#### Built
+- Installed **Recharts 3.10.1** on `@model-monitor/web` (React 19-compatible).
+- `skill-radar.tsx` — 2–4 model radar over active profile skills; Top-N + chip selector;
+  one series per model; token colours via `chart-tokens.ts`; empty state when &lt;2 models.
+- `ranking-scatter.tsx` — axis pairs from brief/PLAN scatter contract; filters; live
+  `/api/v1/overview/scatter`; **omits** models missing an axis (never plots at 0).
+- `side-by-side.tsx` — two leaderboards (profile/skill) for direct comparison (no chart lib).
+- Wired into `rankings-page.tsx`: matrix+radar row; scatter+side-by-side row below.
+- Unit tests in `rankings-charts.test.tsx` (11).
+
+#### Verified
+- `NO_RAW_HEX=PASS` on rankings components/routes.
+- `pnpm lint`, `pnpm typecheck`, `pnpm test:unit` all EXIT=0 (web 109 tests).
+- Evidence: `$RUN_DIR/rankings-charts.txt`.
+
+#### Deferred / notes
+- Overview page still owns its own scatter surface later; rankings reuses the same API.
+- Scatter hover label uses a custom Recharts tooltip (token surfaces only).

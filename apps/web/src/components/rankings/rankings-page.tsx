@@ -14,7 +14,10 @@ import {
 } from "@model-monitor/ui";
 import { LeaderboardTable } from "./leaderboard-table";
 import { ProfilesPanel } from "./profiles-panel";
+import { RankingScatter } from "./ranking-scatter";
 import { ScoreMatrix } from "./score-matrix";
+import { SideBySide } from "./side-by-side";
+import { SkillRadar } from "./skill-radar";
 import type {
   LeaderboardEntryDto,
   ModelEnrichment,
@@ -71,6 +74,7 @@ export function RankingsPageClient({
   }, [models]);
 
   const activeSkill = skills.find((s) => s.id === skillId) ?? null;
+  const activeProfile = profiles.find((p) => p.id === profileId) ?? null;
 
   const providerOptions = useMemo(() => {
     const names = new Set<string>();
@@ -424,20 +428,86 @@ export function RankingsPageClient({
               </TabsContent>
             ))}
 
-            <Card padding="md">
-              <ScoreMatrix
-                skills={skills}
-                modelNames={matrixModels}
-                ratings={ratings}
-                prefer={
-                  type === "personal"
-                    ? "personal"
-                    : type === "external"
-                      ? "external"
-                      : "auto"
-                }
-              />
-            </Card>
+            {/* Score matrix + skill radar (mockup: adjacent band) */}
+            <div
+              data-testid="rankings-matrix-radar-row"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1.45fr) minmax(0, 1fr)",
+                gap: "var(--space-4)",
+                alignItems: "stretch",
+                maxWidth: "100%",
+                minWidth: 0,
+              }}
+            >
+              <Card padding="md" style={{ minWidth: 0, maxWidth: "100%" }}>
+                <ScoreMatrix
+                  skills={skills}
+                  modelNames={matrixModels}
+                  ratings={ratings}
+                  prefer={
+                    type === "personal"
+                      ? "personal"
+                      : type === "external"
+                        ? "external"
+                        : "auto"
+                  }
+                />
+              </Card>
+              <Card padding="md" style={{ minWidth: 0, maxWidth: "100%" }}>
+                <SkillRadar
+                  skills={skills}
+                  ratings={ratings}
+                  candidates={matrixModels}
+                  profile={activeProfile}
+                  type={type}
+                  fetchImpl={fetchImpl}
+                  live
+                />
+              </Card>
+            </div>
+
+            {/* Visual comparisons: scatter + side-by-side */}
+            <div
+              data-testid="rankings-visual-comparisons"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: "var(--space-4)",
+                alignItems: "stretch",
+                maxWidth: "100%",
+                minWidth: 0,
+              }}
+            >
+              <Card padding="md" style={{ minWidth: 0, maxWidth: "100%" }}>
+                <RankingScatter
+                  fetchImpl={fetchImpl}
+                  providerOptions={providerOptions}
+                />
+              </Card>
+              <Card padding="md" style={{ minWidth: 0, maxWidth: "100%" }}>
+                <SideBySide
+                  skills={skills}
+                  profiles={profiles}
+                  type={type}
+                  fetchImpl={fetchImpl}
+                  leftKey={
+                    boardMode === "skill" && skillId
+                      ? `skill:${skillId}`
+                      : profileId
+                        ? `profile:${profileId}`
+                        : undefined
+                  }
+                  rightKey={
+                    profiles.find((p) => p.id !== profileId)
+                      ? `profile:${profiles.find((p) => p.id !== profileId)!.id}`
+                      : skills.find((s) => s.id !== skillId)
+                        ? `skill:${skills.find((s) => s.id !== skillId)!.id}`
+                        : undefined
+                  }
+                />
+              </Card>
+            </div>
           </div>
 
           <aside style={{ position: "sticky", top: "calc(var(--topbar-height, 56px) + var(--space-4))" }}>
