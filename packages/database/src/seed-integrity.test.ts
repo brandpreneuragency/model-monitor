@@ -59,7 +59,7 @@ async function main() {
   `;
 
   const [cost] = await sql`
-    SELECT COALESCE(SUM(p.regular_price), 0)::float8 as total
+    SELECT COALESCE(SUM(COALESCE(p.actual_price, p.regular_price)), 0)::float8 as total
     FROM subscriptions s
     JOIN plans p ON s.plan_id = p.id
     WHERE s.status = 'active'

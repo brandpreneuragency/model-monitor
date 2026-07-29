@@ -29,6 +29,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@model-monitor/csv-import": "workspace:*",
     "@model-monitor/schemas": "workspace:*",
     "drizzle-orm": "^0.44.0",
     "postgres": "^3.4.0",

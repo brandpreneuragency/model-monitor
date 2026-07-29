@@ -344,6 +344,10 @@ export const exportScopeSchema = z.enum([
   "scores",
   "sources",
   "full",
+  "current",
+  "selected",
+  "all",
+  "backup",
 ]);
 
 export type ExportScope = z.infer<typeof exportScopeSchema>;
@@ -364,6 +368,8 @@ export const exportRequestSchema = z.object({
   developerId: uuidSchema.optional(),
   /** Optional filter: only export records for a specific access provider. */
   accessProviderId: uuidSchema.optional(),
+  /** Validated model IDs for the selected-model export. */
+  modelIds: z.array(uuidSchema).default([]),
 });
 
 export type ExportRequest = z.infer<typeof exportRequestSchema>;

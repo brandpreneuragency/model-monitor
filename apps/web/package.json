@@ -17,6 +17,7 @@
   "dependencies": {
     "@auth/core": "^0.37.0",
     "@hookform/resolvers": "^3.10.0",
+    "@model-monitor/csv-import": "workspace:*",
     "@model-monitor/database": "workspace:*",
     "@model-monitor/schemas": "workspace:*",
     "@model-monitor/ui": "workspace:*",

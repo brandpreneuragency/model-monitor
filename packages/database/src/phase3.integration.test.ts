@@ -117,7 +117,7 @@ afterAll(async () => {
   }
   for (const id of createdPlanIds) {
     await client`DELETE FROM audit_events WHERE entity_type = 'plan' AND entity_id = ${id}::uuid`;
-    await client`DELETE FROM plans WHERE id = ${id}::uuid AND slug LIKE 'mmtest:%'`;
+    await client`DELETE FROM plans WHERE id = ${id}::uuid`;
   }
   for (const id of createdSubIds) {
     // Archive first, then clean audit + final delete

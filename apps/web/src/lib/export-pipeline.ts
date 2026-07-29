@@ -161,6 +161,19 @@ function zipStore(files: Array<{ name: string; data: Uint8Array }>): Uint8Array 
   return concat([localDir, centralDir, end]);
 }
 
+export function serializeBackupArchive(tables: Record<string, Record<string, unknown>[]>, exportedAt = new Date().toISOString()): Uint8Array {
+  const files = Object.entries(tables).sort(([a], [b]) => a.localeCompare(b)).map(([table, rows]) => {
+    const headers = Array.from(new Set(rows.flatMap((row) => Object.keys(row)))).sort();
+    const lines = [headers.join(","), ...rows.map((row) => {
+      const safeRow = neutralizeExportRow(row);
+      return headers.map((header) => escapeCsv(scalar(safeRow[header]))).join(",");
+    })];
+    return { name: `tables/${table}.csv`, data: new TextEncoder().encode(`${lines.join("\r\n")}\r\n`) };
+  });
+  files.push({ name: "manifest.json", data: new TextEncoder().encode(JSON.stringify({ version: "phase-26.2", exportedAt, tables: Object.fromEntries(Object.entries(tables).map(([name, rows]) => [name, rows.length])) }, null, 2)) });
+  return zipStore(files);
+}
+
 function sheetXml(_name: string, rows: Row[]): string {
   const columns = columnsFor(rows);
   const sheetRows: string[] = [];

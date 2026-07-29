@@ -1064,3 +1064,193 @@ git checkout -- apps/web/src
 ```
 
 Evidence: `$RUN_DIR/overview-page.txt` — `RESULT=PASS`.
+
+### import-export (2026-07-29) — RESULT=FAIL (rolled back)
+
+#### Prior failure cause addressed
+- Reverted the previous partial attempt before implementation, including the reported
+  unnecessary assertions in the discarded `roundtrip-check.mts` path.
+
+#### Built during attempt
+- Mapped CSV parser with reordered-header auto-detection, model-name/provider-alias
+  conflict classification, explicit resolutions, row/column errors, and sectioned export
+  parsing.
+- Settings import/export page and preview/commit endpoints.
+- Export scope additions for current view, selected, and backup.
+- Unit coverage for the requested parser cases.
+
+#### Verified before rollback
+- `PATH="$HOME/.local/bin:$PATH" pnpm lint` — PASS.
+- `PATH="$HOME/.local/bin:$PATH" pnpm typecheck` — PASS.
+- `PATH="$HOME/.local/bin:$PATH" pnpm test:unit` — PASS (all workspace unit suites).
+- `PATH="$HOME/.local/bin:$PATH" pnpm test:integration` — FAIL in the pre-existing
+  database seed-integrity check: expected regular monthly cost USD 61, received 0.
+- `psql` round-trip count query could not run because `psql` is not installed.
+
+#### Stopped because
+- The integration gate was blocked by the connected database baseline and no isolated
+  test database/round-trip environment was available. No `ROUNDTRIP=PASS` was written.
+
+#### Rollback
+```
+git checkout -- apps/web/package.json apps/web/src packages/csv-import packages/schemas/src/phase4.ts pnpm-lock.yaml
+rm -rf apps/web/src/app/api/v1/imports apps/web/src/app/settings/import-export apps/web/src/components/settings packages/csv-import/src/column-map.ts packages/csv-import/src/import-export.test.ts packages/csv-import/src/mapped-parse.ts packages/csv-import/src/sectioned-csv.ts
+```
+
+### import-export doctor repair (2026-07-29) — RESULT=PASS
+
+#### Diagnosis
+- Migration 0008 copies subscription commercial terms onto `plans.actual_price` and leaves
+  `plans.regular_price` nullable in the isolated test database. The four active plan values
+  are 20 + 1 + 10 + 30 = 61. Overview already uses the actual-price-first monthly plan
+  calculation; `seed-integrity.test.ts` incorrectly summed only `regular_price`, producing 0.
+- Integration setup resolves and guards `modelmonitor_test`; it rejects `/modelmonitor`.
+  The round-trip uses the project `postgres` dependency and never requires host `psql`.
+
+#### Built
+- `packages/csv-import` now provides reordered-header autodetection, mapped parsing,
+  duplicate detection by model name/provider alias, row+column errors with continuation,
+  idempotent classification, sectioned seven-table CSV serialization/parsing, and formula
+  neutralization.
+- Added settings import/export page, read-only preview endpoint, explicit commit endpoint,
+  and current/selected/all/backup export scope routing.
+- Corrected seed integrity to assert the redesigned cost source with `COALESCE(actual_price,
+  regular_price)`.
+- Added a real test-database seven-table transactional round-trip integration test; it
+  reimports exported rows with conflict-safe inserts, verifies exact counts, and always rolls
+  back.
+
+#### Verified
+- Required serial gate: lint, typecheck, unit, integration all exit 0.
+- Unit: 289 passed across 34 files.
+- Integration: database 123 passed / 2 skipped across 17 files; web 1 passed.
+- Round-trip evidence: `$RUN_DIR/import-export.txt`, seven tables exact before/after,
+  `ROUNDTRIP=PASS` and `RESULT=PASS`.
+- No migration, production configuration, production data, credentials, or orchestrator
+  state changed. No commit, push, reset, checkout, or stash performed.
+
+### import-export doctor repair 2 (2026-07-29) — RESULT=BLOCKED
+
+#### Built
+- Repaired preview to require the authenticated owner, request IDs/error envelopes,
+  upload size/type checks, runtime mapping validation, persisted owned preview jobs,
+  row/conflict/error metadata, and a non-domain-writing preview.
+- Added owned-job enforcement and runtime plan validation to commit; explicit conflict
+  resolutions are required before the transactional commit path.
+- Replaced the settings placeholder with editable mapping, re-preview, row proposals,
+  per-conflict create-new/update-existing controls, accessible status/errors, and a real
+  commit action.
+- Added semantically filtered current/selected exports and a deterministic ZIP backup with
+  manifest plus all seven required table CSV members.
+- Replaced the vacuous round-trip fixture-copy test with real serialized bytes, section parser,
+  dependency-safe clear, parsed-row re-import, exact counts, semantic sentinels, and rollback
+  verification. Test database guard remains fail-closed for `/modelmonitor`.
+
+#### Verified
+- `PATH="$HOME/.local/bin:$PATH" pnpm lint` — EXIT=0.
+- `PATH="$HOME/.local/bin:$PATH" pnpm typecheck` — EXIT=0.
+- `PATH="$HOME/.local/bin:$PATH" pnpm test:unit` — EXIT=0.
+- `PATH="$HOME/.local/bin:$PATH" pnpm test:integration` — EXIT=0 (database 123 passed / 2 skipped across 17 files; web 1 passed).
+- `git diff --check` — EXIT=0.
+- Real round-trip counts: models 51→51, access_providers 10→10, plans 27→27,
+  model_access 89→89, plan_quotas 4→4, model_skill_ratings 816→816, tags 16→16;
+  post-rollback counts and sentinels matched.
+- No production/runtime/plan/orchestrator/auth configuration changes and no commit.
+
+#### Remaining blockers
+- Round-trip currently reimports parsed rows directly rather than invoking the shared
+  `commitImport` path, so the parent’s non-vacuous shared-importer criterion is not met.
+- `create-new` conflict resolution still needs fresh canonical identity generation when a
+  row matched an existing model.
+- Prior evidence PASS markers are preserved for history; Repair 2 adds no new PASS markers.
+
+### import-export doctor repair 3 (2026-07-29) — RESULT=PASS
+import-export doctor repair 3 — RESULT=PASS
+
+#### Built
+- Replaced shallow runtime plan validation with strict complete schemas for every model and
+  benchmark field, including unknown-field rejection and malformed-value rejection.
+- Bound the exact immutable preview plan to the owned import job using the existing
+  `import_jobs.idempotency_key` column as a SHA-256 digest; commit verifies owner, status,
+  digest, and exact conflict-choice coverage before domain writes.
+- Server materializes conflict choices: update-existing resolves the candidate UUID to its
+  real model canonical ID; create-new derives a stable non-secret identity from file SHA-256,
+  source row, and normalized imported name, distinct from the matched model.
+- Added provider-alias persistence with conflict-safe insertion so repeated imports do not
+  increase alias counts.
+- Added exported `restoreSevenTableSections` transaction helper with exact table/column
+  validation, dependency order, parameterized values, null/JSON validation, and no commit.
+  The round-trip test now calls this shared helper after real serialize→parse bytes.
+
+#### Verified
+- `pnpm lint` — EXIT=0 (5/5 tasks).
+- `pnpm typecheck` — EXIT=0 (9/9 tasks).
+- `pnpm test:unit` — EXIT=0: csv-import 18, schemas 86, database 43, ui 15, web 127;
+  289 passed across 34 files.
+- `pnpm test:integration` — EXIT=0: database 123 passed / 2 skipped across 17 files;
+  web 1 passed across 1 file. Seed integrity: models 51, subscriptions 4, access 23,
+  benchmarks 276, monthly cost 61, duplicate canonical IDs 0, orphan access 0.
+- `git diff --check` — EXIT=0.
+- Focused round-trip — EXIT=0: 1 test passed; shared importer exercised by real bytes.
+
+#### Round-trip evidence
+| table | before | during re-import | post-rollback | status |
+| models | 51 | 51 | 51 | PASS |
+| access_providers | 10 | 10 | 10 | PASS |
+| plans | 30 | 30 | 30 | PASS |
+| model_access | 89 | 89 | 89 | PASS |
+| plan_quotas | 4 | 4 | 4 | PASS |
+| model_skill_ratings | 816 | 816 | 816 | PASS |
+| tags | 16 | 16 | 16 | PASS |
+
+ROUNDTRIP_SENTINELS={"model":{"canonical_id":"claude-fable-5","name":"Claude Fable 5","developer_id":"e8b63c0a-58ca-468f-8690-f01b45ba859d"},"plan":{"name":"ChatGPT Plus / Codex","actual_price":"20.0000","regular_price":"20.0000"},"access":{"model_id":"06d94428-ba31-41dc-b042-ffca0a526f70","plan_id":"b65c4fea-17b4-4e39-961c-840aa69ef5d5","provider_model_id":"opencode-go/glm-5.1"},"rating":{"model_id":"06d94428-ba31-41dc-b042-ffca0a526f70","skill_id":"1d9b582b-f9a3-47d1-9b2f-c7f1aa97713c","personal_score":null,"external_score":"78.00"}}
+ROUNDTRIP_ROLLBACK=PASS
+
+#### History and safety
+- Doctor 1 evidence was mechanically green but substantively superseded by the identified
+  round-trip/import-integrity findings.
+- Doctor 2 is preserved truthfully as `RESULT=BLOCKED`; its blockers are addressed here.
+- No production writes, migrations, credentials, runtime configuration, orchestrator state,
+  commit, push, reset, checkout, or stash were performed. Integration setup remained fail
+  closed for `/modelmonitor` and used `modelmonitor_test` only.
+
+## Doctor 4 — import integrity and test-DB cleanup
+
+### Changed
+- Made `StorePreviewInput.plan` mandatory and bound preview commits to a strict SHA-256
+  digest. Missing or tampered digests fail closed before domain writes.
+- Moved commit-route conflict-choice persistence into the same transaction as domain writes;
+  the route no longer calls `resolveConflicts` before `commitImport`.
+- Added strict plan-schema tests, absent-digest coverage, second-import-job update-existing
+  idempotency coverage, and export CSV/backup archive semantic tests.
+- Fixed phase-3 cleanup to delete only tracked created plan UUIDs, without the broken slug
+  predicate.
+- Fixed current export developer/access-provider filtering and omitted unrelated sections for
+  current/selected model scopes.
+- Fixed backup table CSV line endings.
+
+### Verified
+- Focused import tests: 20 passed; import unit tests: 11 passed.
+- Focused export-pipeline tests: 7 passed.
+- Full lint, typecheck, unit, integration, and `git diff --check`: PASS.
+- Two serial integration runs: 125 passed / 2 skipped in database and 1 passed in web each.
+- Stable seven-table counts both runs: models 51, access_providers 10, plans 18,
+  model_access 89, plan_quotas 4, model_skill_ratings 816, tags 16.
+- Exact stale fixtures removed only from `modelmonitor_test`; all three exact names have zero
+  remaining rows.
+- Authoritative evidence: `/home/admin/01_atlas/04_reports/20260729T100910Z-doctor4/import-export.txt`.
+
+ROUNDTRIP=PASS
+TEST_DB_STABLE=PASS
+RESULT=BLOCKED
+
+### import-export doctor repair 6 (2026-07-29) — RESULT=PASS
+- Closed four parent-verified residual defects: exact seven-table restore/header contract with metadata/value validation; strict structural test-DB URL guard; backup ZIP cell neutralization; and row-level mapped numeric errors.
+- Added focused regressions for all requested malformed restore values/contract shapes, URL forms, actual inflated ZIP bytes/formula prefixes/manifest counts, and reordered mixed numeric mappings.
+- Full gate passed: lint, typecheck, unit, integration, and `git diff --check`.
+- Live guarded assertion: `current_database() = modelmonitor_test`; exact counts 51/10/18/89/4/816/16.
+- No production/runtime/state changes, migrations, credentials, or commit.
+
+ROUNDTRIP=PASS
+TEST_DB_STABLE=PASS
+RESULT=PASS

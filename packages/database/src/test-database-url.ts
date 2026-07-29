@@ -4,42 +4,63 @@
  */
 export function resolveTestDatabaseUrl(): string {
   const explicit = process.env.MODELMONITOR_TEST_DATABASE_URL?.trim();
-  if (explicit) return explicit;
+  if (explicit) {
+    assertNotProductionDatabase(explicit);
+    return explicit;
+  }
 
   const fromEnv = process.env.DATABASE_URL?.trim();
   if (fromEnv) {
-    if (fromEnv.endsWith("/modelmonitor_test")) return fromEnv;
-    if (fromEnv.endsWith("/modelmonitor")) {
-      return `${fromEnv.slice(0, -"/modelmonitor".length)}/modelmonitor_test`;
-    }
     try {
       const u = new URL(fromEnv);
-      const path = u.pathname.replace(/\/$/, "") || "";
-      if (path === "/modelmonitor") {
+      const database = databaseName(u);
+      if (database === "modelmonitor") {
         u.pathname = "/modelmonitor_test";
-        return u.toString();
+      } else if (database !== "modelmonitor_test") {
+        throw new Error("Refusing to run tests against an unexpected database name. Use modelmonitor_test.");
       }
-      if (path === "/modelmonitor_test") return fromEnv;
-    } catch {
-      // fall through to constructed default
+      const resolved = u.toString();
+      assertNotProductionDatabase(resolved);
+      return resolved;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("unexpected database")) throw error;
+      throw new Error("Refusing to run tests with an invalid database URL. Use a valid modelmonitor_test URL.");
     }
   }
 
   const user = process.env.POSTGRES_USER ?? "modelmonitor";
-  const pass = process.env.POSTGRES_PASSWORD ?? user;
   const host = process.env.POSTGRES_HOST ?? "127.0.0.1";
   const port = process.env.POSTGRES_PORT ?? "5433";
-  return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@${host}:${port}/modelmonitor_test`;
+  const resolved = `postgresql://${encodeURIComponent(user)}:***@${host}:${port}/modelmonitor_test`;
+  assertNotProductionDatabase(resolved);
+  return resolved;
 }
 
-/** Throw if a URL targets the live production database name. */
+function databaseName(url: URL): string {
+  let decodedPath: string;
+  try {
+    decodedPath = decodeURIComponent(url.pathname);
+  } catch {
+    throw new Error("Invalid encoded database URL path");
+  }
+  const normalized = decodedPath.replace(/\/+$/, "");
+  if (!normalized.startsWith("/") || normalized.length <= 1 || normalized.includes("/", 1)) {
+    throw new Error("Database URL must contain exactly one database path segment");
+  }
+  return normalized.slice(1);
+}
+
+/** Throw unless a URL targets exactly the isolated test database name. */
 export function assertNotProductionDatabase(url: string = process.env.DATABASE_URL ?? ""): void {
-  const trimmed = url.trim();
-  if (trimmed.endsWith("/modelmonitor")) {
-    throw new Error(
-      "Refusing to run tests against the production database (DATABASE_URL ends with /modelmonitor). " +
-        "Use modelmonitor_test.",
-    );
+  try {
+    const parsed = new URL(url.trim());
+    if (parsed.protocol !== "postgres:" && parsed.protocol !== "postgresql:") throw new Error("unsupported protocol");
+    if (databaseName(parsed) !== "modelmonitor_test") {
+      throw new Error("Refusing to run tests against a non-test database. Use modelmonitor_test.");
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("non-test database")) throw error;
+    throw new Error("Refusing to run tests with an invalid database URL. Use a valid modelmonitor_test URL.");
   }
 }
 

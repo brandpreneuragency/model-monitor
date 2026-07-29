@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { and, asc, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { slugifyModelName } from "@model-monitor/schemas";
 import {
@@ -24,6 +25,7 @@ import {
   type importPreviewResponseSchema,
 } from "@model-monitor/schemas";
 import { z } from "zod";
+import type { ExportSection } from "@model-monitor/csv-import";
 import * as schema from "../schema/index";
 import {
   writeAudit,
@@ -125,6 +127,41 @@ export interface ImportPlanBenchmarkRow {
 export interface ImportPlan {
   modelRows: ImportPlanModelRow[];
   benchmarkRows: ImportPlanBenchmarkRow[];
+}
+
+const nullableString = z.string().nullable();
+const nullableNumber = z.number().finite().nullable();
+const nullableBoolean = z.boolean().nullable();
+const importPlanModelRowSchema = z.object({
+  classification: z.enum(["create", "update", "unchanged", "duplicate", "error", "skip"]),
+  canonicalId: nullableString,
+  developerName: nullableString, name: nullableString, family: nullableString,
+  generation: nullableString, lifecycleRaw: nullableString, releaseDate: nullableString,
+  modelType: nullableString, contextTokens: nullableNumber, maxOutputTokens: nullableNumber,
+  speedRating: nullableString, codingSpecialization: nullableString, bestUse: nullableString,
+  avoidFor: nullableString, visionSupport: nullableBoolean, reasoningSupport: nullableString,
+  toolSupport: nullableString, knowledgeCutoff: nullableString, needsRecheck: nullableBoolean,
+  accessProviderName: nullableString, planName: nullableString, providerModelId: nullableString,
+  subscriptionUsdMo: nullableNumber, sourceSheet: nullableString, sourceRow: z.number().int().positive().nullable(),
+  verifiedOn: nullableString,
+}).strict();
+const importPlanBenchmarkRowSchema = z.object({
+  modelCanonicalId: z.string().min(1), benchmarkName: z.string().min(1), category: z.string().min(1),
+  version: nullableString, comparableGroup: nullableString, score: nullableNumber, scoreText: nullableString,
+  setting: nullableString, harness: nullableString, sourceType: nullableString, sourceUrl: nullableString,
+  resultDate: nullableString, confidence: nullableNumber,
+}).strict();
+/** Runtime boundary for API-supplied plans; unknown, missing, and malformed fields fail closed. */
+export const importPlanSchema = z.object({
+  modelRows: z.array(importPlanModelRowSchema),
+  benchmarkRows: z.array(importPlanBenchmarkRowSchema),
+}).strict();
+
+export function canonicalImportPlan(plan: ImportPlan): string {
+  return JSON.stringify(plan);
+}
+export function importPlanDigest(plan: ImportPlan): string {
+  return createHash("sha256").update(canonicalImportPlan(plan), "utf8").digest("hex");
 }
 
 // ── Commit result ───────────────────────────────────────────────
@@ -345,6 +382,23 @@ export async function getImportJob(
   return mapImportJobRow(row);
 }
 
+/** Fetch an import job only when it belongs to the authenticated actor. */
+export async function getOwnedImportJob(
+  db: DbOrTx,
+  id: string,
+  userId: string,
+): Promise<ImportJobResponse> {
+  const uuid = requireUuid(id, "importJobId");
+  const owner = requireUuid(userId, "userId");
+  const [row] = await db
+    .select()
+    .from(schema.importJobs)
+    .where(and(eq(schema.importJobs.id, uuid), eq(schema.importJobs.userId, owner)))
+    .limit(1);
+  if (!row) throw new ModelServiceError("NOT_FOUND", "Import job not found", 404);
+  return mapImportJobRow(row);
+}
+
 export async function listImportJobs(
   db: Db,
   rawQuery: unknown,
@@ -456,6 +510,8 @@ export async function updateImportJobStatus(
 // ── 1b. Preview Storage (read-only — no domain table mutations) ─
 
 export interface StorePreviewInput {
+  /** The exact server-bound plan is mandatory for a committable preview. */
+  plan: ImportPlan;
   previewSummary: z.input<typeof importPreviewSummarySchema>;
   conflicts: Array<{
     conflictType: string;
@@ -478,6 +534,7 @@ export async function storePreview(
   ctx: AuditContext = {},
 ): Promise<void> {
   const uuid = requireUuid(importJobId, "importJobId");
+  const plan = importPlanSchema.parse(input.plan);
   const previewSummary = importPreviewSummarySchema.parse(input.previewSummary);
   return db.transaction(async (tx) => {
     const [job] = await tx
@@ -511,6 +568,7 @@ export async function storePreview(
       .set({
         status,
         previewSummary,
+        idempotencyKey: importPlanDigest(plan),
         errorSummary: input.errorSummary ?? null,
         sheetSummary: input.sheetSummary ?? null,
         updatedAt: new Date(),
@@ -660,13 +718,20 @@ export async function resolveConflicts(
 
 // ── 1d. Commit (single-transaction apply) ──────────────────────
 
+export interface ImportCommitResolution {
+  sourceRow: number;
+  action: "create-new" | "update-existing";
+}
+
 export async function commitImport(
   db: Db,
   importJobId: string,
   plan: ImportPlan,
   ctx: AuditContext = {},
+  resolutions: ImportCommitResolution[] = [],
 ): Promise<ImportCommitResult> {
   const uuid = requireUuid(importJobId, "importJobId");
+  const validatedPlan = importPlanSchema.parse(plan);
   return db.transaction(async (tx) => {
     const [job] = await tx
       .select()
@@ -677,10 +742,37 @@ export async function commitImport(
     if (!job) {
       throw new ModelServiceError("NOT_FOUND", "Import job not found", 404);
     }
+    if (ctx.actorUserId && job.userId !== ctx.actorUserId) {
+      throw new ModelServiceError("FORBIDDEN", "Import job does not belong to the authenticated user", 403);
+    }
     if (job.status === "committed") {
       const summary =
         (job.commitSummary as ImportCommitSummary) ?? importCommitSummarySchema.parse({});
       return importCommitSummaryToResult(summary);
+    }
+    if (!job.idempotencyKey) {
+      throw new ModelServiceError("PRECONDITION_FAILED", "Preview plan digest is required before commit", 400);
+    }
+    if (job.idempotencyKey !== importPlanDigest(validatedPlan)) {
+      throw new ModelServiceError("PRECONDITION_FAILED", "Preview plan digest does not match the stored immutable preview", 400);
+    }
+    const conflictRowsForResolution = await tx
+      .select()
+      .from(schema.importConflicts)
+      .where(eq(schema.importConflicts.importJobId, uuid));
+    const expectedRows = new Set(conflictRowsForResolution.map((c) => c.sourceRow).filter((r): r is number => r !== null));
+    const suppliedRows = new Set(resolutions.map((r) => r.sourceRow));
+    if (suppliedRows.size !== resolutions.length || suppliedRows.size !== expectedRows.size || [...expectedRows].some((r) => !suppliedRows.has(r)) || [...suppliedRows].some((r) => !expectedRows.has(r))) {
+      throw new ModelServiceError("PRECONDITION_FAILED", "Conflict choices must exactly match the preview conflicts", 400);
+    }
+    for (const choice of resolutions) {
+      const conflict = conflictRowsForResolution.find((c) => c.sourceRow === choice.sourceRow);
+      if (!conflict) throw new ModelServiceError("PRECONDITION_FAILED", "Conflict choice does not belong to this preview", 400);
+      await tx.update(schema.importConflicts).set({
+        resolution: choice.action === "create-new" ? "use_imported" : "keep_existing",
+        resolutionPayload: { action: choice.action },
+        resolvedAt: new Date(),
+      }).where(and(eq(schema.importConflicts.id, conflict.id), eq(schema.importConflicts.importJobId, uuid)));
     }
     if (job.status !== "preview_ready" && job.status !== "needs_resolution") {
       throw new ModelServiceError(
@@ -689,6 +781,24 @@ export async function commitImport(
         400,
       );
     }
+    const conflictRows = await tx
+      .select()
+      .from(schema.importConflicts)
+      .where(eq(schema.importConflicts.importJobId, uuid));
+    if (conflictRows.some((conflict) => !conflict.resolution || !["keep_existing", "use_imported"].includes(conflict.resolution))) {
+      throw new ModelServiceError("PRECONDITION_FAILED", "Every preview conflict requires a server-validated resolution", 400);
+    }
+    const effectiveRows = await Promise.all(validatedPlan.modelRows.map(async (row) => {
+      const conflict = conflictRows.find((item) => item.sourceRow === row.sourceRow);
+      if (!conflict) return row;
+      if (!conflict.candidateEntityId) throw new ModelServiceError("PRECONDITION_FAILED", "Preview conflict has no candidate", 400);
+      const [candidate] = await tx.select({ canonicalId: schema.models.canonicalId }).from(schema.models).where(eq(schema.models.id, conflict.candidateEntityId)).limit(1);
+      if (!candidate) throw new ModelServiceError("PRECONDITION_FAILED", "Preview conflict candidate no longer exists", 400);
+      if (conflict.resolution === "keep_existing") return { ...row, classification: "update" as const, canonicalId: candidate.canonicalId };
+      const stable = `import:${createHash("sha256").update(`${job.sha256}:${row.sourceRow ?? 0}:${(row.name ?? "").trim().toLowerCase()}`, "utf8").digest("hex").slice(0, 40)}`;
+      return { ...row, classification: "create" as const, canonicalId: stable };
+    }));
+    const effectivePlan: ImportPlan = { modelRows: effectiveRows, benchmarkRows: validatedPlan.benchmarkRows };
     const [unresolved] = await tx
       .select({ count: sql<number>`count(*)` })
       .from(schema.importConflicts)
@@ -710,13 +820,14 @@ export async function commitImport(
       .set({ status: "committing", updatedAt: new Date() })
       .where(eq(schema.importJobs.id, uuid));
 
-    const devMap = await resolveDeveloperNames(tx, plan);
-    const apMap = await resolveAccessProviderNames(tx, plan);
-    const planMap = await resolvePlanNames(tx, plan);
+    const devMap = await resolveDeveloperNames(tx, effectivePlan);
+    const apMap = await resolveAccessProviderNames(tx, effectivePlan);
+    const planMap = await resolvePlanNames(tx, effectivePlan);
 
     let modelsCreated = 0;
     let modelsUpdated = 0;
     let accessCreated = 0;
+    let aliasesCreated = 0;
     const accessUpdated = 0;
     let rowsSkipped = 0;
 
@@ -728,7 +839,7 @@ export async function commitImport(
       rawValue: unknown;
     }> = [];
 
-    for (const row of plan.modelRows) {
+    for (const row of effectivePlan.modelRows) {
       if (
         row.classification === "skip" ||
         row.classification === "error" ||
@@ -816,6 +927,8 @@ export async function commitImport(
             throw err;
           }
         }
+        const aliasCreated = await createProviderAlias(tx, row, created.id, apMap);
+        if (aliasCreated) aliasesCreated += 1;
       } else if (row.classification === "update") {
         if (!row.canonicalId) {
           rowsSkipped += 1;
@@ -892,14 +1005,15 @@ export async function commitImport(
             throw err;
           }
         }
+        const aliasCreated = await createProviderAlias(tx, row, existing.id, apMap);
+        if (aliasCreated) aliasesCreated += 1;
       }
     }
 
     let benchmarkRowsCreated = 0;
     const scoresCreated = 0;
     const sourcesCreated = 0;
-    const aliasesCreated = 0;
-    for (const bRow of plan.benchmarkRows) {
+    for (const bRow of effectivePlan.benchmarkRows) {
       const [model] = await tx
         .select({ id: schema.models.id })
         .from(schema.models)
@@ -968,7 +1082,7 @@ export async function commitImport(
       );
     }
 
-    const conflictsResolved = plan.modelRows.filter(
+    const conflictsResolved = effectivePlan.modelRows.filter(
       (r) => r.classification === "update" || r.classification === "create",
     ).length;
     const commitSummary: ImportCommitSummary = {
@@ -1020,7 +1134,7 @@ export async function commitImport(
 
 export async function listExportModels(
   db: Db,
-  input?: { includeArchived?: boolean; neutralizeFormulas?: boolean },
+  input?: { includeArchived?: boolean; neutralizeFormulas?: boolean; developerId?: string; accessProviderId?: string },
 ): Promise<ExportModelRow[]> {
   const includeArchived = input?.includeArchived ?? false;
   const neutralize = input?.neutralizeFormulas ?? true;
@@ -1028,6 +1142,8 @@ export async function listExportModels(
   if (!includeArchived) {
     conditions.push(eq(schema.models.status, "active"));
   }
+  if (input?.developerId) conditions.push(eq(schema.models.developerId, input.developerId));
+  if (input?.accessProviderId) conditions.push(sql`exists (select 1 from model_access ma join plans p on p.id = ma.plan_id where ma.model_id = ${schema.models.id} and p.access_provider_id = ${input.accessProviderId})`);
   const rows = await db
     .select({
       model: schema.models,
@@ -1186,6 +1302,79 @@ export async function listExportSources(db: Db, input?: { neutralizeFormulas?: b
 }
 
 /** Read only safe provenance fields; filesystem paths and secrets are intentionally excluded. */
+/** Complete raw rows for the seven-table phase backup/round-trip contract. */
+export async function listExportSevenTables(db: Db): Promise<Record<string, Record<string, unknown>[]>> {
+  const rows = await Promise.all([
+    db.select().from(schema.models),
+    db.select().from(schema.accessProviders),
+    db.select().from(schema.plans),
+    db.select().from(schema.modelAccess),
+    db.select().from(schema.planQuotas),
+    db.select().from(schema.modelSkillRatings),
+    db.select().from(schema.tags),
+  ]);
+  return Object.fromEntries(["models", "access_providers", "plans", "model_access", "plan_quotas", "model_skill_ratings", "tags"].map((name, index) => [name, rows[index] as Record<string, unknown>[]]));
+}
+
+const SEVEN_TABLES = ["models", "access_providers", "plans", "model_access", "plan_quotas", "model_skill_ratings", "tags"] as const;
+type RestoreClient = { unsafe: (query: string, values?: readonly unknown[]) => Promise<Array<Record<string, unknown>>> };
+type RestoreColumn = { column_name: string; data_type: string; udt_name: string; is_nullable: string };
+
+function restoreError(message: string): ModelServiceError {
+  return new ModelServiceError("VALIDATION_ERROR", message, 400);
+}
+
+function validateRestoreValue(value: string | null, column: RestoreColumn, table: string): string | null {
+  if (value === null) {
+    if (column.is_nullable !== "YES" && column.is_nullable !== "NO") throw restoreError(`Malformed column metadata for ${table}.${column.column_name}`);
+    if (column.is_nullable === "NO") throw restoreError(`Null value for non-null column ${table}.${column.column_name}`);
+    return null;
+  }
+  const type = column.data_type.toLowerCase();
+  const udt = column.udt_name.toLowerCase();
+  const invalid = () => { throw restoreError(`Invalid ${type} value for ${table}.${column.column_name}`); };
+  if (udt === "uuid" && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) invalid();
+  if (type === "boolean" && !/^(true|false|t|f|1|0|yes|no)$/i.test(value)) invalid();
+  if (["smallint", "integer", "bigint"].includes(type) || ["int2", "int4", "int8"].includes(udt)) {
+    if (!/^-?\d+$/.test(value) || !Number.isSafeInteger(Number(value))) invalid();
+  }
+  if (["numeric", "decimal", "real", "double precision"].includes(type) || ["numeric", "float4", "float8"].includes(udt)) {
+    if (value.trim() === "" || !Number.isFinite(Number(value))) invalid();
+  }
+  if (["date", "timestamp without time zone", "timestamp with time zone"].includes(type) || ["date", "timestamp", "timestamptz"].includes(udt)) {
+    if (Number.isNaN(Date.parse(value))) invalid();
+  }
+  if (type === "json" || type === "jsonb" || udt === "json" || udt === "jsonb") {
+    try { JSON.parse(value); } catch { invalid(); }
+  }
+  return value;
+}
+
+/** Shared transaction-only backup restore boundary. It validates table and column names and never commits. */
+export async function restoreSevenTableSections(tx: RestoreClient, sections: ExportSection[]): Promise<void> {
+  const names = sections.map((section) => section.table);
+  if (names.length !== SEVEN_TABLES.length || new Set(names).size !== names.length || names.some((name) => !SEVEN_TABLES.includes(name as typeof SEVEN_TABLES[number]))) throw restoreError("Backup must contain exactly the seven required table sections");
+  const order = new Map<string, number>(SEVEN_TABLES.map((table, index) => [table, index]));
+  for (const section of [...sections].sort((a, b) => order.get(a.table)! - order.get(b.table)!)) {
+    if (section.headers.length === 0 || new Set(section.headers).size !== section.headers.length || section.headers.some((header) => !/^[a-z][a-z0-9_]*$/.test(header))) throw restoreError(`Malformed headers for ${section.table}`);
+    const metadataRows = await tx.unsafe("SELECT column_name, data_type, udt_name, is_nullable FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1", [section.table]);
+    if (metadataRows.length === 0 || metadataRows.some((row) => typeof row.column_name !== "string" || typeof row.data_type !== "string" || typeof row.udt_name !== "string" || (row.is_nullable !== "YES" && row.is_nullable !== "NO"))) throw restoreError(`Malformed column metadata for ${section.table}`);
+    const metadata = new Map(metadataRows.map((row) => [row.column_name, row as unknown as RestoreColumn]));
+    if (section.headers.length !== metadata.size || section.headers.some((header) => !metadata.has(header))) throw restoreError(`Backup columns do not exactly match ${section.table}`);
+    for (const row of section.rows) {
+      if (Object.keys(row).length !== section.headers.length || Object.keys(row).some((column) => !section.headers.includes(column))) throw restoreError(`Malformed row in ${section.table}`);
+      const values = section.headers.map((column) => validateRestoreValue(row[column], metadata.get(column)!, section.table));
+      const placeholders = values.map((_, index) => `$${index + 1}`).join(", ");
+      try {
+        await tx.unsafe(`INSERT INTO "${section.table}" (${section.headers.map((header) => `"${header}"`).join(", ")}) VALUES (${placeholders})`, values);
+      } catch (error) {
+        if (error instanceof ModelServiceError) throw error;
+        throw restoreError(`Backup row rejected by ${section.table}`);
+      }
+    }
+  }
+}
+
 export async function listExportProvenance(db: Db): Promise<ImportProvenanceDto[]> {
   const rows = await db.select({
     id: schema.importProvenance.id,
@@ -1286,6 +1475,17 @@ async function resolvePlanNames(
     map.set(r.slug, r.id);
   }
   return map;
+}
+
+async function createProviderAlias(tx: Tx, row: ImportPlanModelRow, modelId: string, apMap: Map<string, string>): Promise<boolean> {
+  if (!row.providerModelId) return false;
+  const normalizedAlias = row.providerModelId.trim().toLowerCase();
+  if (!normalizedAlias) return false;
+  const inserted = await tx.insert(schema.modelAliases).values({
+    modelId, alias: row.providerModelId, normalizedAlias, aliasType: "provider",
+    accessProviderId: row.accessProviderName ? (apMap.get(row.accessProviderName.toLowerCase().trim()) ?? null) : null,
+  }).onConflictDoNothing().returning({ id: schema.modelAliases.id });
+  return inserted.length > 0;
 }
 
 function createAccessRows(
