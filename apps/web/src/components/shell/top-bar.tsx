@@ -112,7 +112,7 @@ export function TopBar() {
     border: "1px solid var(--border)",
     borderRadius: "var(--radius-full)",
     padding: "var(--space-2) var(--space-4)",
-    color: "var(--text-faint)",
+    color: "var(--text-muted)",
     fontSize: "var(--text-meta-size)",
     cursor: "pointer",
     width: "100%",
@@ -125,7 +125,7 @@ export function TopBar() {
     borderRadius: "var(--radius-sm)",
     padding: "0 6px",
     fontSize: 10,
-    color: "var(--text-faint)",
+    color: "var(--text-muted)",
   };
 
   const actions: CSSProperties = {

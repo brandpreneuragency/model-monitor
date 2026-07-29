@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectDuplicates, parseMappedCsv, parseSections, serializeSections } from "./index.js";
+import { detectDuplicates, parseMappedCsv, parseSections, serializeSections } from "./index";
 
 describe("mapped import/export", () => {
   it("preview/service contract maps reordered column headers without mutation", () => {

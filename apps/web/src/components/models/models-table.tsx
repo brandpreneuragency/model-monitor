@@ -680,7 +680,7 @@ export function ModelsTable({
   };
 
   return (
-    <div data-testid="models-table-root">
+    <div data-testid="models-page">
       <div style={head}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)" }}>
           <h1

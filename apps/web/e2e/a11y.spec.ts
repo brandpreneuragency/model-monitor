@@ -10,7 +10,12 @@ async function expectNoCriticalOrSerious(page: Page, label: string) {
   );
   if (serious.length > 0) {
     const summary = serious
-      .map((v) => `${v.impact} ${v.id}: ${v.help} (${v.nodes.length} nodes)`)
+      .map((v) => {
+        const nodes = v.nodes
+          .map((node) => `${node.target.join(" ")} :: ${node.html}`)
+          .join("\n    ");
+        return `${v.impact} ${v.id}: ${v.help} (${v.nodes.length} nodes)\n    ${nodes}`;
+      })
       .join("\n");
     throw new Error(`Accessibility violations on ${label}:\n${summary}`);
   }

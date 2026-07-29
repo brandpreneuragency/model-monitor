@@ -35,7 +35,7 @@ function variantStyles(variant: ButtonVariant): CSSProperties {
   switch (variant) {
     case "primary":
       return {
-        background: "var(--accent)",
+        background: "var(--accent-strong)",
         color: "var(--text)",
         border: "1px solid transparent",
       };

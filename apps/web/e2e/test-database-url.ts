@@ -1,5 +1,10 @@
+import { resolve } from "node:path";
+import { loadEnvFile } from "node:process";
+
 /** Isolated E2E database — never the live production name. */
 export function resolveTestDatabaseUrl(): string {
+  loadRepositoryEnv();
+
   const explicit = process.env.MODELMONITOR_TEST_DATABASE_URL?.trim();
   if (explicit) return explicit;
 
@@ -23,10 +28,29 @@ export function resolveTestDatabaseUrl(): string {
   }
 
   const user = process.env.POSTGRES_USER ?? "modelmonitor";
-  const pass = process.env.POSTGRES_PASSWORD ?? user;
+  const pass = process.env.POSTGRES_PASSWORD;
+  if (!pass) {
+    throw new Error("No E2E database credentials are configured. Set DATABASE_URL or POSTGRES_PASSWORD.");
+  }
   const host = process.env.POSTGRES_HOST ?? "127.0.0.1";
   const port = process.env.POSTGRES_PORT ?? "5433";
   return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@${host}:${port}/modelmonitor_test`;
+}
+
+function loadRepositoryEnv(): void {
+  if (
+    process.env.MODELMONITOR_TEST_DATABASE_URL?.trim() ||
+    process.env.DATABASE_URL?.trim() ||
+    process.env.POSTGRES_PASSWORD?.trim()
+  ) {
+    return;
+  }
+
+  try {
+    loadEnvFile(resolve(import.meta.dirname, "../../../.env"));
+  } catch {
+    // The explicit missing-credentials error above is clearer than loadEnvFile's ENOENT.
+  }
 }
 
 export function assertNotProductionDatabase(url: string = process.env.DATABASE_URL ?? ""): void {

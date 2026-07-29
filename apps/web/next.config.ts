@@ -5,6 +5,7 @@ const config: NextConfig = {
     "@model-monitor/database",
     "@model-monitor/schemas",
     "@model-monitor/ui",
+    "@model-monitor/csv-import",
   ],
   serverExternalPackages: ["drizzle-orm", "postgres"],
 };

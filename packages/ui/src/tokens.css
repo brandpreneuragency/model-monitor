@@ -25,11 +25,12 @@
   /* ── Text ─────────────────────────────────────────────────── */
   --text: #e9e9ee; /* primary */
   --text-muted: #9a9aa6; /* secondary / metadata */
-  --text-faint: #6a6a76; /* tertiary */
+  --text-faint: #80808d; /* tertiary; AA on card/sidebar surfaces */
   --text-inverse: #08080b;
 
   /* ── Accent (indigo) ──────────────────────────────────────── */
   --accent: #6366f1;
+  --accent-strong: #5154df; /* filled controls; preserves AA contrast with --text */
   --accent-hover: #7679f3;
   --accent-bg: rgba(99, 102, 241, 0.12); /* selected state */
   --accent-border: rgba(99, 102, 241, 0.35);

@@ -1,7 +1,7 @@
-import { parseProseBoolean, parseYesNo } from "./booleans.js";
-import { parseCsvText } from "./csv.js";
-import { emptyToNull, parseDecimal, parseGeneration } from "./numbers.js";
-import { splitPackageRoutes } from "./packages.js";
+import { parseProseBoolean, parseYesNo } from "./booleans";
+import { parseCsvText } from "./csv";
+import { emptyToNull, parseDecimal, parseGeneration } from "./numbers";
+import { splitPackageRoutes } from "./packages";
 import type {
   ParsedAccessRoute,
   ParsedBenchmarkResult,
@@ -13,7 +13,7 @@ import type {
   ParsedQuota,
   ParsedSkillScore,
   ParsedSource,
-} from "./types.js";
+} from "./types";
 
 /** Expected header row (row 4 / 0-indexed 3). First cell must be Provider; length 76. */
 export const EXPECTED_HEADER = [
@@ -511,6 +511,6 @@ export function parseMasterCsv(buffer: Buffer): ParsedMaster {
   };
 }
 
-export { parseDecimal, parseGeneration } from "./numbers.js";
-export { parseProseBoolean } from "./booleans.js";
-export { splitPackageRoutes, KNOWN_COMPOUND_PACKAGES } from "./packages.js";
+export { parseDecimal, parseGeneration } from "./numbers";
+export { parseProseBoolean } from "./booleans";
+export { splitPackageRoutes, KNOWN_COMPOUND_PACKAGES } from "./packages";

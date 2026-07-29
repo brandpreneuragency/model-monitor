@@ -1,4 +1,4 @@
-import { autoDetectColumnMapping, type ColumnMapping, requiredMappingErrors } from "./column-map.js";
+import { autoDetectColumnMapping, type ColumnMapping, requiredMappingErrors } from "./column-map";
 
 export type ImportRowError = { row: number; column: string; code: string; message: string };
 export type MappedRow = { row: number; values: Record<string, string | null> };

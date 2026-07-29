@@ -1,4 +1,4 @@
-import type { ProseBoolean } from "./types.js";
+import type { ProseBoolean } from "./types";
 
 /**
  * Map prose capability cells to boolean | null while preserving the full string.

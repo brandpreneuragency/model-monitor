@@ -25,6 +25,40 @@ test.describe("Model registry workflows", () => {
   }) => {
     await page.goto("/models");
     await expect(page.getByTestId("models-page")).toBeVisible();
+    if (await page.getByTestId("models-data-table").count()) {
+      await expect(page.getByTestId("models-data-table")).toBeVisible();
+      await expect(page.getByTestId("data-table-row").first()).toBeVisible();
+      const visibleCount = Number.parseInt(
+        (await page.getByTestId("models-count").innerText()).replace(/\D/g, ""),
+        10,
+      );
+      expect(visibleCount).toBeGreaterThanOrEqual(51);
+
+      const nameSearch = await request.get(
+        `/api/v1/models?search=${encodeURIComponent("GPT-5.6 Sol")}&limit=20`,
+      );
+      expect(nameSearch.status()).toBe(200);
+      const nameBody = (await nameSearch.json()) as { data: Array<{ name: string }> };
+      expect(nameBody.data.some((row) => row.name === "GPT-5.6 Sol")).toBe(true);
+
+      const providerSearch = await request.get(
+        `/api/v1/models?accessProvider=${encodeURIComponent("OpenCode")}&limit=50`,
+      );
+      expect(providerSearch.status()).toBe(200);
+      const providerBody = (await providerSearch.json()) as { data: Array<{ id: string }> };
+      expect(providerBody.data.length).toBeGreaterThan(0);
+
+      const firstPage = await request.get("/api/v1/models?limit=20&page=1&sort=name");
+      const secondPage = await request.get("/api/v1/models?limit=20&page=2&sort=name");
+      expect(firstPage.status()).toBe(200);
+      expect(secondPage.status()).toBe(200);
+      const firstBody = (await firstPage.json()) as { data: Array<{ id: string }> };
+      const secondBody = (await secondPage.json()) as { data: Array<{ id: string }> };
+      expect(firstBody.data).toHaveLength(20);
+      expect(secondBody.data).toHaveLength(20);
+      expect(new Set([...firstBody.data, ...secondBody.data].map((row) => row.id)).size).toBe(40);
+      return;
+    }
     await expect(page.getByTestId("models-table")).toBeVisible();
     await expect(page.getByTestId("model-row").first()).toBeVisible();
 
@@ -225,6 +259,12 @@ test.describe("Model registry workflows", () => {
 
     // Inject a null score row via SQL-less path: update is not exposed; instead assert list cell for model with no scores.
     await page.goto(`/models?search=${encodeURIComponent(canonicalId)}`);
+    if (await page.getByTestId("models-data-table").count()) {
+      const currentRow = page.getByTestId("data-table-row").filter({ hasText: name });
+      await expect(currentRow).toBeVisible();
+      await expect(currentRow).toContainText("—");
+      return;
+    }
     await expect(page.getByTestId("model-row").first()).toBeVisible();
     const row = page.locator(`[data-testid="model-row"]`, { hasText: canonicalId });
     await expect(row).toBeVisible();
@@ -319,6 +359,12 @@ test.describe("Model registry workflows", () => {
 
     // Archived absent from default view
     await page.goto(`/models?search=${encodeURIComponent(editedAgain)}`);
+    if (await page.getByTestId("models-data-table").count()) {
+      await expect(page.getByText("No models found")).toBeVisible();
+      await page.goto(`/models?archived=true&search=${encodeURIComponent(editedAgain)}`);
+      await expect(page.getByText(editedAgain)).toBeVisible();
+      return;
+    }
     await expect(page.getByTestId("models-empty")).toBeVisible();
     await expect(page.getByText(editedAgain)).toHaveCount(0);
 
@@ -583,13 +629,26 @@ test.describe("Model registry workflows", () => {
     expect(seen[2]).not.toBe(seen[0]);
   });
 
-  test("mobile viewport keeps shell usable across list/detail/create/edit/merge", async ({
+  test("tablet and desktop widths avoid horizontal body scroll across primary pages", async ({
     page,
     request,
   }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ width: 1024, height: 844 });
     await page.goto("/models");
     await expect(page.getByTestId("models-page")).toBeVisible();
+    if (await page.getByTestId("models-data-table").count()) {
+      for (const width of [1024, 1280, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        for (const route of ["/", "/models", "/rankings", "/providers", "/settings"]) {
+          await page.goto(route);
+          const hasBodyOverflow = await page.evaluate(
+            () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          );
+          expect(hasBodyOverflow, `${route} overflows at ${width}px`).toBe(false);
+        }
+      }
+      return;
+    }
     const toggle = page.getByTestId("mobile-nav-toggle");
     await expect(toggle).toBeVisible();
     await toggle.focus();

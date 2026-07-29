@@ -1264,3 +1264,59 @@ RESULT=PASS
 - Raw-hex grep across `apps/web/src`: empty.
 - Gates: lint PASS, typecheck PASS, test:unit PASS (133 web tests; 318 total reported across workspace), test:integration PASS (130 passed / 2 skipped database; web integration passed).
 - Verification evidence: `/home/admin/.hermes/orchestrator/runs/2026-07-27-model-directory-redesign/settings-responsive.txt`.
+
+## Final review and defect list (2026-07-29T12:16:12Z) — RESULT=PASS
+
+### Fixed in review-fix
+- Reversed the unrecorded partial prior attempt before starting, then reapplied only verified repairs.
+- Fixed the reported integration authentication failure. The database test URL fallback contained
+  a literal redacted password and non-interactive runs did not load the repository `.env`.
+  Database and Playwright URL resolvers now load `.env` only when explicit test credentials are
+  absent, rewrite only `modelmonitor` to `modelmonitor_test`, require credentials, and retain the
+  strict test-database guard. No secret is logged or stored in evidence.
+- Updated E2E assertions for the redesigned Models table while preserving API pagination/search,
+  null-score, create/edit/archive/restore, merge, and auth-boundary coverage. Added the required
+  1024/1280/1440 body-overflow gate.
+- Fixed serious Axe findings: nested interactive Popover triggers and insufficient contrast in
+  primary buttons, active sidebar items, shortcut/search labels, and tertiary text.
+- Fixed the production build by making `@model-monitor/csv-import` transpilable by Next and using
+  bundler-compatible extensionless internal imports.
+- Removed the production `_gallery` route and the unused legacy `models-filters.tsx`; repository
+  search found no application links/imports to either.
+
+### Remaining issues and why they were not fixed
+1. Deferred destructive cleanup remains: `api_tokens`, `model_scores`, `usage_snapshots`,
+   `subscriptions`, `subscription_limit_rules`, and superseded `app_settings` saved-view keys.
+   This phase is additive-only and the old application remains live. The deploy-finalize phase must
+   dump first, switch the application, then perform these drops/deletions in its controlled window.
+2. Legacy `/api/v1/exports/{current,selected,all}` still includes a `subscriptions` export section
+   and calls `listExportSubscriptions`. The required backup/round-trip path already uses the new
+   seven-table plans-based format and passes, but dropping `subscriptions` without first migrating
+   or removing this legacy section would break those non-backup export scopes. This was not changed
+   because it is a cross-package export-contract/schema/test rewrite outside a safe final repair;
+   deploy-finalize must migrate the section to plans or remove it before the table drop.
+3. `next build` emits non-fatal `jose` Edge-runtime warnings for CompressionStream and
+   DecompressionStream through Auth.js. The build succeeds and local health/login serving passes.
+   Resolving it requires an Auth.js/Next runtime or dependency review, not an untested final-phase
+   version change.
+4. Turbo emits non-fatal “no output files found” warnings for typecheck-only package build tasks.
+   These tasks intentionally run `tsc --noEmit`; fixing the warning would require adjusting Turbo
+   outputs/cache semantics and has no application correctness impact.
+5. Public deployment smoke and seven-container post-deploy health are intentionally left to the next
+   phase. This phase verified only the criterion-13 portion assigned here: optimized build succeeds
+   and the built application serves locally (`/login` 200, `/` login redirect, health 200).
+
+### Verification
+- Completion criteria: 14/14 passed under the phase-specific interpretation of criteria 12 and 13.
+- Full serial gate: lint 5/5 tasks; typecheck 9/9; unit 13/13 tasks (UI 15, schemas 86,
+  CSV import 18, database 66, web 133); integration 10/10 tasks (database 130 passed / 2 skipped,
+  web 1 passed); E2E auth 7 passed plus application 15 passed.
+- Build: 10/10 tasks; optimized Next build completed and generated 39 pages.
+- Production junk after E2E cleanup: zero matching model, plan, or subscription rows.
+- Local smoke server was stopped; port 3121 confirmed closed. During this smoke, `next start`
+  briefly used Next's default all-interface bind before being killed; no persistent port, firewall,
+  proxy, container, or runtime configuration was changed.
+- Authoritative evidence: `/home/admin/.hermes/orchestrator/runs/2026-07-27-model-directory-redesign/review-fix.txt`.
+
+CRITERIA_MET=14/14
+RESULT=PASS

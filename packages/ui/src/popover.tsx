@@ -83,23 +83,12 @@ export function Popover({
       style={{ position: "relative", display: "inline-block" }}
       data-testid={testId}
     >
-      <div
+      <span
         onClick={() => setOpen(!open)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setOpen(!open);
-          }
-        }}
-        role="button"
-        tabIndex={0}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-controls={open ? panelId : undefined}
         style={{ display: "inline-flex", transition: fastTransition }}
       >
         {trigger}
-      </div>
+      </span>
       {open ? (
         <div id={panelId} role="dialog" style={panel}>
           {children}

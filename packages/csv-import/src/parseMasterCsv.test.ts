@@ -9,7 +9,7 @@ import {
   parseMasterCsv,
   parseProseBoolean,
   splitPackageRoutes,
-} from "./index.js";
+} from "./index";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(HERE, "../../..");
