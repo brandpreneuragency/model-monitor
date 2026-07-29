@@ -914,3 +914,36 @@ Evidence: `$RUN_DIR/model-drawer.txt` — `RESULT=PASS`.
 ```
 git checkout -- apps/web/src packages/database/src/forms.integration.test.ts
 ```
+
+### compare (2026-07-29T02:17Z) — RESULT=PASS
+
+#### Built
+- `apps/web/src/components/models/compare-view.tsx` — column-per-model matrix with groups:
+  Access, Plans, Pricing, Quotas, Specifications, Capabilities, Ratings, Best-use notes,
+  Weaknesses. Agreeing rows de-emphasised (`data-agree`); differing rows highlighted via
+  `--bg-card-hover` + `border-left: var(--border-strong)` (not colour-only, not semantic
+  palette). Missing cells render **not recorded**.
+- `apps/web/src/app/models/compare/page.tsx` — loads `?ids=` (cap 4) via `getModelById`,
+  maps access routes into compare columns; tray already routes here.
+- `compare-tray.tsx` — 5th add/toggle refused with visible `compare-limit-notice` message
+  (no silent drop). Chip remove + dismiss.
+- Unit tests: 2/3/4 columns; agree/differ; not recorded; fifth refused.
+
+#### Verified
+- `pnpm lint` EXIT=0
+- `pnpm typecheck` EXIT=0
+- `pnpm test:unit` EXIT=0 (web 15 files / 88 tests; compare-view 8, compare-tray 1)
+- Raw-hex grep empty → `NO_RAW_HEX=PASS`
+- Evidence: `$RUN_DIR/compare.txt` — `RESULT=PASS`
+
+#### Notes / deferred
+- Pricing/quota on the compare page often **not recorded** until preferred plan cost/quota
+  is joined in a later enrichment (detail snapshot has access provider/plan names only).
+- Personal vs external overall scores supported when supplied; list/detail currently feed
+  overall + basis when present.
+
+#### Rollback (this phase only)
+```
+git checkout -- apps/web/src
+```
+
