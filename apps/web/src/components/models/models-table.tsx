@@ -39,6 +39,10 @@ import { FilterBar } from "./filter-bar";
 import { ModelsCardsGrid } from "./model-card";
 import { ModelsCompact } from "./models-compact";
 import {
+  ModelDrawer,
+  ModelDrawerFooter,
+} from "@/components/models/drawer";
+import {
   parseModelFilters,
   serializeModelFilters,
   type ModelFilterState,
@@ -130,66 +134,6 @@ function loadVisibleColumns(): ModelColumnId[] {
   } catch {
     return [...DEFAULT_COLUMN_IDS];
   }
-}
-
-function ModelDrawerBody({ model }: { model: ModelTableRow }) {
-  const row: CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "120px 1fr",
-    gap: "var(--space-2)",
-    fontSize: "var(--text-meta-size)",
-    padding: "var(--space-1) 0",
-    borderBottom: "1px solid var(--border-subtle)",
-  };
-  const label: CSSProperties = { color: "var(--text-muted)" };
-  const value: CSSProperties = { color: "var(--text)" };
-  const pairs: Array<[string, string]> = [
-    ["Creator", model.creator?.name ?? model.developerName ?? "—"],
-    [
-      "Access",
-      model.preferredAccess?.providerName ??
-        model.preferredAccessProvider?.name ??
-        "—",
-    ],
-    [
-      "Plan",
-      model.preferredAccess?.planName ?? model.preferredPlan?.name ?? "—",
-    ],
-    ["Status", model.workflowStatus ?? model.status ?? "—"],
-    [
-      "Context",
-      model.context != null || model.contextTokens != null
-        ? String(model.context ?? model.contextTokens)
-        : "—",
-    ],
-    ["Speed", model.speed ?? model.speedRating ?? "—"],
-    [
-      "Overall",
-      model.overallScore == null ? "untested" : String(model.overallScore),
-    ],
-    ["Best skill", model.bestSkill?.name ?? "—"],
-    ["Cost / Quota", model.costOrQuota?.trim() ? model.costOrQuota : "not recorded"],
-    ["Canonical", model.canonicalId ?? "—"],
-  ];
-  return (
-    <div data-testid="models-drawer-body">
-      <p
-        style={{
-          margin: "0 0 var(--space-3)",
-          color: "var(--text-muted)",
-          fontSize: "var(--text-meta-size)",
-        }}
-      >
-        Full model drawer arrives in a later phase. Snapshot of list fields:
-      </p>
-      {pairs.map(([k, v]) => (
-        <div key={k} style={row}>
-          <span style={label}>{k}</span>
-          <span style={value}>{v}</span>
-        </div>
-      ))}
-    </div>
-  );
 }
 
 export function ModelsTable({
@@ -516,40 +460,73 @@ export function ModelsTable({
 
   const openModel = useCallback(
     (model: ModelTableRow) => {
+      const doCompare = () => {
+        if (
+          !compare.isSelected(model.id) &&
+          compare.selectedIds.length >= compare.max
+        ) {
+          setSelectionNotice(
+            `Compare is limited to ${compare.max} models. Remove one before adding another.`,
+          );
+          return;
+        }
+        compare.toggle({ id: model.id, name: model.name });
+      };
+      const doEdit = () => {
+        router.push(`/models/${encodeURIComponent(model.id)}/edit`);
+      };
+      const doFavourite = async () => {
+        try {
+          const res = await fetch(
+            `/api/v1/models/${encodeURIComponent(model.id)}`,
+            {
+              method: "PATCH",
+              credentials: "same-origin",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ isFavourite: !model.isFavourite }),
+            },
+          );
+          if (!res.ok) throw new Error("Favourite update failed");
+          setData((prev) =>
+            prev.map((r) =>
+              r.id === model.id
+                ? { ...r, isFavourite: !model.isFavourite }
+                : r,
+            ),
+          );
+        } catch {
+          setError("Could not update favourite");
+        }
+      };
+
       openDrawer({
         title: model.name,
         size: "md",
-        body: <ModelDrawerBody model={model} />,
+        body: (
+          <ModelDrawer
+            modelId={model.id}
+            initialModel={model}
+            onFavouriteToggle={() => void doFavourite()}
+            onEditModel={doEdit}
+            onCompare={doCompare}
+            onEditAccessRoute={(accessId) => {
+              router.push(
+                `/models/${encodeURIComponent(model.id)}?tab=access&accessId=${encodeURIComponent(accessId)}`,
+              );
+            }}
+          />
+        ),
         footer: (
-          <div style={{ display: "flex", gap: "var(--space-2)", width: "100%" }}>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                if (
-                  !compare.isSelected(model.id) &&
-                  compare.selectedIds.length >= compare.max
-                ) {
-                  setSelectionNotice(
-                    `Compare is limited to ${compare.max} models. Remove one before adding another.`,
-                  );
-                  return;
-                }
-                compare.toggle({ id: model.id, name: model.name });
-              }}
-            >
-              {compare.isSelected(model.id) ? "Remove compare" : "Compare"}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() =>
-                router.push(`/models/${encodeURIComponent(model.id)}`)
-              }
-            >
-              Open full page
-            </Button>
-          </div>
+          <ModelDrawerFooter
+            onCompare={doCompare}
+            onEditModel={doEdit}
+            compareLabel={
+              compare.isSelected(model.id) ? "Remove compare" : "Compare"
+            }
+          />
         ),
       });
     },

@@ -842,3 +842,46 @@ Evidence: `$RUN_DIR/models-filters.txt` — `RESULT=PASS`.
 
 #### Deferred
 - None for this phase.
+
+### model-drawer (2026-07-29T01:41Z) — RESULT=PASS
+
+#### Built
+- `apps/web/src/components/models/drawer/` — five-tab model details drawer matching
+  `docs/design/models.html` open drawer:
+  - `model-drawer.tsx` container (header: name, creator badge, model ID, status chips,
+    favourite star, overflow menu; loads detail/access/ratings/skills/tags/plans)
+  - `overview-tab.tsx` — best for, avoid for, personal notes, status, tags, capabilities
+    grid, overall rating (+ optional ratings preview)
+  - `access-cost-tab.tsx` — access routes list (provider, plan, access type, provider
+    model ID, availability, pricing, quotas, notes, preferred). Edit/set-preferred/archive
+    mutate `/api/v1/model-access` only — does **not** require editing the model (§15)
+  - `rankings-tab.tsx` — per-skill personal | external | confidence | ranking columns;
+    seeded personal empty → deliberate **untested** label; never a merged score
+  - `specifications-tab.tsx` — family, generation, release, cutoff, context, max output,
+    vision/reasoning/tool/agent, model type, etc.
+  - `research-tab.tsx` — benchmarks (setting/harness), sources + verification dates, QC /
+    recheck; **collapsed by default**, smaller muted type (visually secondary)
+- Wired `models-table.tsx` `openModel` → full `ModelDrawer` + footer Compare / Edit Model
+
+#### Verified
+- Screenshot `02-models-table-drawer.png` viewed via vision (native); mockup remains contract
+- Unit: five tabs; rankings separate columns + untested; research collapsed; Escape closes
+- `TABS=5`
+- Raw-hex grep empty → `NO_RAW_HEX=PASS`
+- `pnpm lint` / `typecheck` / `test:unit` EXIT=0 (web 71 tests)
+
+#### Notes / deferred
+- Personal notes field not on `models` schema; Overview uses `description` as notes fallback
+- Access route “Edit route” navigates to legacy model page `?tab=access` (access-only API
+  mutations for preferred/archive already in-drawer). Inline access editor form deferred.
+- Mockup Overview shows sample personal ratings; Rankings tab is the full skill matrix with
+  empty personal column for seed data as required.
+- Host `Drawer` title still shows model name above the custom header (duplicate name) —
+  acceptable; close/Escape owned by host Drawer.
+
+#### Rollback (this phase only)
+```
+git checkout -- apps/web/src
+```
+
+Evidence: `$RUN_DIR/model-drawer.txt` — `RESULT=PASS`.
