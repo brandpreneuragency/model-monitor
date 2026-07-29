@@ -41,6 +41,7 @@ describe("SQL migrations", () => {
       "0006_seed_ownership.sql",
       "0007_rankings_tags_views.sql",
       "0008_plans_quotas_models.sql",
+      "0009_drop_legacy.sql",
       "0009_provider_logo_colour.sql",
     ]);
   });

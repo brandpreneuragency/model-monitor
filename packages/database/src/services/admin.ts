@@ -11,14 +11,6 @@ import * as schema from "../schema";
 import { ModelServiceError, writeAudit, jsonSafe, type DbOrTx } from "./audit";
 
 const SETTINGS_VERIFICATION = "admin.verification";
-/**
- * Legacy blob key prefix for per-user saved views in app_settings.
- * Table-backed `saved_views` supersedes this; the blob is left in place until
- * deploy-finalize (see progress.md ## Deferred drops). Do not write here.
- */
-const _SETTINGS_VIEWS_LEGACY = "admin.savedViews";
-void _SETTINGS_VIEWS_LEGACY;
-
 const TOKEN_SCOPE = "catalog:read" as const;
 
 export function hashApiToken(token: string): string {
@@ -181,7 +173,7 @@ export async function setVerificationSettings(
 }
 
 // Saved-view CRUD moved to services/tags-views.ts (saved_views table).
-// Legacy app_settings key admin.savedViews* left unread/unwritten here.
+
 
 export async function listAuditEvents(db: DbOrTx, query: AuditQuery) {
   const filters = [];

@@ -121,10 +121,10 @@ These constraints are non-negotiable for this redesign and every later phase:
 4. **Incomplete records.** Incomplete records are always allowed. Only `name` is required
    to create a model. Forms must not force fields the owner does not have.
 
-5. **Additive-only migrations during the build.** During this run, **no migration may drop
-   or rename anything** the live app might still read. Removals are recorded in
-   `progress.md` under `## Deferred drops` for the deploy phase to execute. Schema work
-   is additive until deploy.
+5. **Post-redesign migration safety.** The controlled deploy removed the legacy tables in
+   `0009_drop_legacy.sql` after a restore-tested backup and rollback-image tag. Do not
+   reintroduce those tables. Future destructive migrations require the same explicit,
+   verified backup and rollback discipline.
 
 ## 6. Architecture rules
 
@@ -157,7 +157,8 @@ These constraints are non-negotiable for this redesign and every later phase:
 - Foreign keys enforced.
 - Import provenance preserved.
 - Audit events immutable where written.
-- Do not drop or rename live columns/tables until the deploy phase deferred list runs.
+- Treat live schema removal or rename as a deployment operation: require an explicit
+  migration, restore-tested backup, rollback path, and runtime verification.
 
 ## 7. Data rules
 
@@ -270,7 +271,7 @@ Reviewers and later agents must check:
 
 - product scope and primary-nav constraint
 - data invariants (null/false/0, one canonical model, creator ≠ access provider)
-- migration safety (additive-only until deploy; drops only via `## Deferred drops`)
+- migration safety (explicit migration, restore-tested backup, rollback, runtime verification)
 - transactional integrity and import idempotency / provenance
 - audit coverage only where required (not ratings/tags/saved views)
 - score separation (personal vs external)

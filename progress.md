@@ -1320,3 +1320,48 @@ RESULT=PASS
 
 CRITERIA_MET=14/14
 RESULT=PASS
+
+### deploy-finalize (2026-07-29T12:42:03Z) — RESULT=PASS
+
+#### Shipped
+- Pushed `redesign/model-directory`, fast-forwarded `master` to `f44b297`, and pushed
+  `origin/master`. No pull request was opened: the pushed branch is the recorded diff and
+  revert point, and the run intentionally did not handle a PAT.
+- Added and applied `packages/database/migrations/0009_drop_legacy.sql`. It removed exactly
+  `subscriptions`, `subscription_limit_rules`, `api_tokens`, `model_scores`,
+  `usage_snapshots`, and `app_settings` keys `admin.savedViews` / `admin.savedViews.*`.
+- Removed the retired tables from migration discovery metadata and stopped legacy export
+  scopes from querying the retired subscription/score tables; authenticated all-data export
+  returns 200 after the drops.
+- Rebuilt and restarted the production web container. The documented `-p model-monitor`
+  command built successfully but could not adopt the fixed-name containers owned by the live
+  Compose project `docker`; its empty network/volumes were removed and the built application
+  was deployed through the authoritative `docker` project.
+- Updated `README.md` for the four-page application and current seed expectations, and
+  updated `AGENTS.md` from build-time additive-only language to post-deploy migration safety.
+
+#### Backup and rollback
+- Restore-tested dump: `/home/admin/01_atlas/05_backups/model-monitor-predeploy-20260729T122529Z.sql.gz`
+  (193594 bytes); restored into `modelmonitor_restoretest`, verified `models=51`, then dropped
+  the scratch database.
+- Rollback image: `model-monitor-web:pre-redesign`, byte-identical to the image serving before
+  this deployment.
+- Runtime-accurate image rollback command: `docker tag model-monitor-web:pre-redesign docker-web:latest && docker compose -p docker -f docker/compose.yaml up -d web`;
+  restore the dump to `modelmonitor` afterward if database rollback is required.
+
+#### Production verification
+- 7 containers up; web healthy.
+- Anonymous root 307 to `/login?callbackUrl=%2F`; `/login` 200; login form rendered.
+- Authenticated `/`, `/models`, `/rankings`, and `/providers` each returned 200.
+- Authenticated removed routes `/access-matrix`, `/benchmarks`, `/audit`, `/imports`,
+  `/dashboard`, and `/subscriptions` each returned 404.
+- Production counts: models 51, model_skill_ratings 816, plan_quotas 4.
+- `atlasdash.brandpreneur.net`, `atlas.brandpreneur.net`, and `wagneratelier.co` each returned 200.
+- Lint and typecheck passed; database unit tests 66/66 and web unit tests 133/133 passed;
+  final optimized container build passed.
+
+#### Deferred (2 non-blocking engineering warnings)
+1. Auth.js/Jose emits non-fatal Edge-runtime CompressionStream/DecompressionStream build warnings.
+2. Turbo reports missing output files for intentional `tsc --noEmit` build tasks.
+
+No product or deployment blocker remains from the redesign.

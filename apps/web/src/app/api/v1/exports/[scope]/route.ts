@@ -1,5 +1,5 @@
 import { inArray } from "drizzle-orm";
-import { listExportAccess, listExportBenchmarks, listExportModels, listExportProvenance, listExportScores, listExportSources, listExportSubscriptions, listExportSevenTables, schema } from "@model-monitor/database";
+import { listExportAccess, listExportBenchmarks, listExportModels, listExportProvenance, listExportSources, listExportSevenTables, schema } from "@model-monitor/database";
 import { exportRequestSchema } from "@model-monitor/schemas";
 import { db } from "@/lib/db";
 import { getRequestId, jsonError, requireApiSession } from "@/lib/api";
@@ -53,8 +53,8 @@ export async function GET(request: Request, context: { params: Promise<{ scope: 
       models: modelRows,
       access,
       benchmarks,
-      scores: await listExportScores(db, options),
-      subscriptions: await listExportSubscriptions(db, options),
+      scores: [],
+      subscriptions: [],
       sources: await listExportSources(db, options),
       provenance: input.includeProvenance ? await listExportProvenance(db) : [],
       search: input.search,
