@@ -6,7 +6,7 @@ import {
   type ModelsListResponse,
 } from "@/components/models/models-table";
 import type { ModelTableRow } from "@/components/models/models-columns";
-import { parseModelFilters } from "@/lib/use-model-filters";
+import { parseModelFiltersForServer } from "@/lib/server-model-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +39,7 @@ export default async function ModelsPage({
   const page = parsePage(first(sp.page));
   const limit = parseLimit(first(sp.limit));
   const sort = first(sp.sort)?.trim() || "name";
-  const filters = parseModelFilters(sp);
+  const filters = parseModelFiltersForServer(sp);
 
   let initialData: ModelsListResponse = {
     data: [],

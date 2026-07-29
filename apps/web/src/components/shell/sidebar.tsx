@@ -277,6 +277,7 @@ export function Sidebar() {
 
   return (
     <aside
+      className="responsive-sidebar"
       style={aside}
       data-testid="app-sidebar"
       data-collapsed={collapsed ? "true" : "false"}

@@ -49,7 +49,50 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    overflow-x: hidden;
   }
+}
+
+/* Keep the application viewport bounded while allowing intentional table scrolling. */
+@media (max-width: 1279px) {
+  .responsive-sidebar {
+    width: 64px !important;
+    padding-left: var(--space-2) !important;
+    padding-right: var(--space-2) !important;
+  }
+  .responsive-sidebar > div span,
+  .responsive-sidebar nav a > span:last-child,
+  .responsive-sidebar [data-testid="shortcut-view-all"] > span:last-child {
+    display: none;
+  }
+  .responsive-sidebar nav a,
+  .responsive-sidebar a {
+    justify-content: center !important;
+  }
+  .responsive-sidebar [data-testid="sidebar-collapse"] { display: inline-flex !important; }
+  .responsive-sidebar [data-testid="sidebar-expand"] { display: inline-flex; }
+}
+
+@media (max-width: 1023px) {
+  .mm-drawer-root [data-size="sm"],
+  .mm-drawer-root [data-size="md"],
+  .mm-drawer-root [data-size="lg"] {
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+  [data-testid="app-main"] { padding: var(--space-4) !important; }
+}
+
+@media (max-width: 639px) {
+  [data-testid="compare-tray"] {
+    left: var(--space-3) !important;
+    right: var(--space-3) !important;
+    bottom: var(--space-3) !important;
+    transform: none !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+  [data-testid="compare-tray"] > div { flex-wrap: wrap; }
 }
 
 /* Ensure screen-reader-only utility exists even if Tailwind purge misses it. */

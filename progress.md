@@ -1254,3 +1254,13 @@ RESULT=BLOCKED
 ROUNDTRIP=PASS
 TEST_DB_STABLE=PASS
 RESULT=PASS
+
+### settings-responsive (2026-07-29) — RESULT=PASS
+- Added secondary settings routes for Tags, Skills, Import / Export, Backup and Restore, Appearance, and General; settings remain outside primary navigation.
+- Added responsive icon-rail sidebar below 1280px with a working toggle, full-width drawer below 1024px, bounded body overflow, and narrow-screen compare-tray wrapping.
+- Fixed the server/client filter-parser boundary so `/models` renders successfully in the verification server.
+- Fixed Turbo integration environment propagation by declaring database variables in `globalEnv`; this resolves the prior seed-integrity authentication/state failure. Seed integrity verified 51 models, 4 subscriptions, 23 access rows, 276 benchmarks, 51 capabilities, 4 usage snapshots, and monthly cost 61.
+- Playwright: all 15 width/page combinations passed at 1280px, 1440px, and 1024px; sidebar toggle passed.
+- Raw-hex grep across `apps/web/src`: empty.
+- Gates: lint PASS, typecheck PASS, test:unit PASS (133 web tests; 318 total reported across workspace), test:integration PASS (130 passed / 2 skipped database; web integration passed).
+- Verification evidence: `/home/admin/.hermes/orchestrator/runs/2026-07-27-model-directory-redesign/settings-responsive.txt`.
