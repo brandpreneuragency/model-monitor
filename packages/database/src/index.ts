@@ -31,4 +31,5 @@ export * from "./services/admin";
 export * from "./services/users";
 export * from "./services/rankings";
 export * from "./services/tags-views";
+export * from "./services/overview";
 export { cleanupTestModels } from "./cleanup-test-models";

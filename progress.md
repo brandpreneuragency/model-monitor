@@ -654,3 +654,32 @@ rm -f packages/database/src/api-tags-views.integration.test.ts \
 rm -rf apps/web/src/app/api/v1/tags apps/web/src/app/api/v1/models/[modelId]/tags
 ```
 
+### api-overview (2026-07-29T00:35Z) — RESULT=PASS
+
+#### Built
+- Overview aggregate APIs under `/api/v1/overview/*` (7 GET routes).
+- Service: `packages/database/src/services/overview.ts` — live SQL only.
+- Schemas: `packages/schemas/src/overview.ts`.
+- Integration: `api-overview.integration.test.ts` (12 tests) asserting seed consistency
+  (provider distribution sums to access rows; Coding leaders match leaderboard top-3).
+
+#### Verified
+- `pnpm lint` / `typecheck` / `test:unit` / `test:integration` PASS.
+- Real seeded responses written to `$RUN_DIR/api-overview.txt`.
+- Trends short when history is single-month (e.g. `[51]`) — not fabricated 12-point series.
+- Scatter omits models missing either axis value.
+- OLD_APP up: web+postgres healthy; root 307→login.
+
+#### Deferred
+- None for this phase.
+
+#### Rollback
+```
+git checkout -- apps/web/src/app/api packages/database/src/services \
+  packages/database/src/index.ts packages/schemas/src/index.ts
+rm -f packages/database/src/api-overview.integration.test.ts \
+  packages/database/src/services/overview.ts packages/schemas/src/overview.ts
+rm -rf apps/web/src/app/api/v1/overview
+```
+
+Evidence: `$RUN_DIR/api-overview.txt` — `RESULT=PASS`.
