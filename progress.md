@@ -947,3 +947,31 @@ git checkout -- apps/web/src packages/database/src/forms.integration.test.ts
 git checkout -- apps/web/src
 ```
 
+
+### rankings-page (2026-07-29T02:37Z) — RESULT=PASS
+
+#### Built
+- `apps/web/src/app/rankings/page.tsx` + `apps/web/src/components/rankings/*`
+- Tabs: **My Rankings** / **External Rankings** / **Combined** (adjacent personal + external columns; never merged)
+- Seeded My Rankings (all personal null) → deliberate empty state + “Rate a model”
+- Skill selector (16+ skills) + Add Skill; Profile selector; provider + min confidence filters
+- Leaderboard: rank, model, personal, external, confidence, creator, access provider, plan, cost, best use, notes
+- Inline rating actions dialog: score 1–10, confidence, notes, test date, mark untested, hide, rank override, pin
+- Ranking profiles rail: seeded profiles, New Profile, per-skill weight sliders (save + live reload in profile-overall mode)
+- Score matrix: Heatmap / Numbers, full-screen toggle, token-based score legend (numbers mode shows ScoreCell values)
+
+#### Screenshot
+- Viewed `$PLAN_DIR/screenshots/03-rankings.png` via vision. Mockup remains contract.
+- Discrepancy vs mockup: Skill Radar card is in the HTML mockup/screenshot bottom-right; this phase’s brief focuses on leaderboard/matrix/profiles (charts phase `rankings-charts` owns radar). Matrix placed full-width under leaderboard.
+
+#### Verified
+- Profile switch (Heavy Coding vs Cheap Subagent) top-5 differ → `PROFILE_SWITCH_REORDERS=PASS`
+- Raw-hex grep empty → `NO_RAW_HEX=PASS`
+- `pnpm lint` / `typecheck` / `test:unit` EXIT=0 (web 98 tests; rankings 10)
+
+#### Rollback (this phase only)
+```
+git checkout -- apps/web/src
+```
+
+Evidence: `$RUN_DIR/rankings-page.txt` — `RESULT=PASS`.
