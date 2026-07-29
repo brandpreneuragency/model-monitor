@@ -1002,3 +1002,34 @@ Evidence: `$RUN_DIR/rankings-page.txt` — `RESULT=PASS`.
 #### Deferred / notes
 - Overview page still owns its own scatter surface later; rankings reuses the same API.
 - Scatter hover label uses a custom Recharts tooltip (token surfaces only).
+
+### providers-page (2026-07-29T03:00Z) — RESULT=PASS
+
+#### Screenshot
+- SCREENSHOT_VIEWED=YES via vision_analyze on `$PLAN_DIR/screenshots/04-providers-plans.png`.
+- Mockup (`docs/design/providers.html`) is the contract. Screenshot shows Providers tab with
+  provider grid + plans table + right rail (Quota Summary / Upcoming Renewals) as a combined
+  reference layout. This phase implements **four discrete tabs** per brief (Providers, Plans,
+  Quotas, Renewals); rail summaries are not separate chrome on every tab (Quotas/Renewals tabs
+  own that content). No mockup conflict requiring a deviation note beyond that structural
+  choice (tabs vs single-scroll mockup).
+
+#### Built
+- `apps/web/src/app/providers/page.tsx` + `apps/web/src/components/providers/*`
+- Tabs: **Providers** (grid/list) / **Plans** (table) / **Quotas** (inline remaining edit) /
+  **Renewals** (four kinds, date-sorted, informational only)
+- Provider/plan detail drawers; `QuotaProgress` uses `ProgressBar` (unlimited without %;
+  null remaining → "not recorded", no fabricated bar)
+- Unit tests: 4 tabs; unlimited; null remaining; renewals sort
+
+#### Verified
+- `TABS=4`
+- Raw-hex grep empty → `NO_RAW_HEX=PASS`
+- `pnpm lint` / `typecheck` / `test:unit` EXIT=0 (web 116 tests; providers 7)
+- Evidence: `$RUN_DIR/providers-page.txt` — `RESULT=PASS`
+
+#### Rollback (this phase only)
+```
+git checkout -- apps/web/src
+```
+
