@@ -815,3 +815,30 @@ git checkout -- apps/web/src
 
 Evidence: `$RUN_DIR/models-filters.txt` — `RESULT=PASS`.
 
+### models-cards (2026-07-29T01:27Z) — RESULT=PASS
+
+#### Built
+- Cards view: `apps/web/src/components/models/model-card.tsx` (+ grid) with name,
+  creator, access provider, plan, status, context, speed, main capabilities,
+  overall ScoreCell, best skill, cost/quota, best-use, tags; actions favourite,
+  compare, edit, archive, open details.
+- Compact view: `apps/web/src/components/models/models-compact.tsx` — 32px one-line
+  rows (name, creator, provider, overall, best skill, cost).
+- View mode persistence: `apps/web/src/lib/models-view-mode.ts` → localStorage
+  `mm.models.viewMode` alongside density; URL `?view=` kept in sync; SegmentedControl
+  wires Table/Cards/Compact.
+- `models-table.tsx` hosts all three modes sharing filters, compare selection, drawer,
+  pagination footer. Mode switch only patches view chrome (filters/sort/selection preserved).
+- Extended `ModelTableRow` with `bestUse` + `capabilities`; exported card helpers from
+  `models-columns.tsx`. Saved-views reuses shared `VIEW_MODE_STORAGE_KEY`.
+- Vitest: jsdom + testing-library for card render tests; web unit tests 65.
+
+#### Verified
+- Unit: mode switch preserves filters/selection; mode persists across remount;
+  null overall score → untested ScoreCell (not 0).
+- `pnpm lint` / `typecheck` / `test:unit` all EXIT=0.
+- Raw-hex grep on models components + view-mode lib empty → NO_RAW_HEX=PASS.
+- Evidence: `$RUN_DIR/models-cards.txt`.
+
+#### Deferred
+- None for this phase.

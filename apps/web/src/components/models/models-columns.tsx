@@ -77,6 +77,28 @@ export type ModelTableRow = {
     accessType?: string | null;
   } | null;
   accessProviders?: string[];
+  bestUse?: string | null;
+  avoidFor?: string | null;
+  description?: string | null;
+  codingSpecialization?: string | null;
+  capabilities?: {
+    vision?: boolean | null;
+    reasoning?: boolean | null;
+    toolUse?: boolean | null;
+    parallelAgents?: boolean | null;
+    computerUse?: boolean | null;
+    audioInput?: boolean | null;
+    videoInput?: boolean | null;
+    imageInput?: boolean | null;
+    structuredOutput?: boolean | null;
+    functionCalling?: boolean | null;
+    details?: unknown;
+    display?: {
+      vision?: string;
+      reasoning?: string;
+      toolUse?: string;
+    };
+  } | null;
 };
 
 export type ModelColumnId =
@@ -230,22 +252,29 @@ function isRecentlyNew(row: ModelTableRow): boolean {
   });
 }
 
-function workflowColor(status: string | null | undefined): SemanticColor {
+export function workflowColor(status: string | null | undefined): SemanticColor {
   const s = (status ?? "").toLowerCase();
-  if (s === "active") return "ok";
-  if (s === "testing" || s === "evaluating" || s === "trial") return "info";
-  if (s === "deprecated" || s === "limited") return "warn";
+  if (s === "active" || s === "preferred") return "ok";
+  if (
+    s === "testing" ||
+    s === "evaluating" ||
+    s === "trial" ||
+    s === "preview"
+  ) {
+    return "info";
+  }
+  if (s === "deprecated" || s === "limited" || s === "legacy") return "warn";
   if (s === "retired" || s === "archived" || s === "blocked") return "danger";
   if (s === "candidate" || s === "watch") return "advanced";
   return "neutral";
 }
 
-function workflowLabel(status: string | null | undefined): string {
+export function workflowLabel(status: string | null | undefined): string {
   if (!status) return "Unknown";
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-function speedColor(speed: string | null | undefined): string {
+export function speedColor(speed: string | null | undefined): string {
   const s = (speed ?? "").toLowerCase();
   if (s.includes("very") && s.includes("fast")) return "var(--fast)";
   if (s.includes("fast")) return "var(--ok)";
@@ -254,11 +283,11 @@ function speedColor(speed: string | null | undefined): string {
   return "var(--text-muted)";
 }
 
-function creatorName(row: ModelTableRow): string {
+export function creatorName(row: ModelTableRow): string {
   return row.creator?.name ?? row.developerName ?? "—";
 }
 
-function providerName(row: ModelTableRow): string {
+export function providerName(row: ModelTableRow): string {
   return (
     row.preferredAccess?.providerName ??
     row.preferredAccessProvider?.name ??
@@ -266,8 +295,33 @@ function providerName(row: ModelTableRow): string {
   );
 }
 
-function planName(row: ModelTableRow): string {
+export function planName(row: ModelTableRow): string {
   return row.preferredAccess?.planName ?? row.preferredPlan?.name ?? "—";
+}
+
+/** Main capability chips for cards — only affirmative capabilities. */
+export function mainCapabilityLabels(
+  caps: ModelTableRow["capabilities"],
+): string[] {
+  if (!caps) return [];
+  const out: string[] = [];
+  if (caps.vision === true) out.push("Vision");
+  if (caps.reasoning === true) out.push("Reasoning");
+  if (caps.toolUse === true) out.push("Tools");
+  if (caps.parallelAgents === true) out.push("Agents");
+  if (caps.computerUse === true) out.push("Computer use");
+  if (caps.functionCalling === true && caps.toolUse !== true) {
+    out.push("Functions");
+  }
+  if (caps.structuredOutput === true) out.push("Structured");
+  if (caps.audioInput === true) out.push("Audio");
+  if (caps.videoInput === true) out.push("Video");
+  return out;
+}
+
+export function costOrQuotaText(value: string | null | undefined): string {
+  if (value == null || value.trim() === "") return "not recorded";
+  return value;
 }
 
 function accessTypeLabel(row: ModelTableRow): string {

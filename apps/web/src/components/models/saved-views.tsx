@@ -23,9 +23,12 @@ import {
   OPTIONAL_COLUMN_IDS,
   type ModelColumnId,
 } from "./models-columns";
+import {
+  VIEW_MODE_STORAGE_KEY,
+  type ModelsViewMode,
+} from "@/lib/models-view-mode";
 
 const COLUMNS_STORAGE_KEY = "mm.models.columns";
-const VIEW_MODE_STORAGE_KEY = "mm.models.viewMode";
 
 export type SavedViewRecord = {
   id: string;
@@ -34,7 +37,7 @@ export type SavedViewRecord = {
   filters: Record<string, unknown>;
   sort: Record<string, unknown> | unknown[];
   visibleColumns: string[];
-  viewMode: "table" | "cards" | "compact";
+  viewMode: ModelsViewMode;
   density: "comfortable" | "standard" | "compact";
   isDefault: boolean;
   sortOrder: number;

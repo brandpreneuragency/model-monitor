@@ -20,7 +20,6 @@ import type {
 import {
   Button,
   DataTable,
-  EmptyState,
   IconButton,
   Popover,
   SegmentedControl,
@@ -37,11 +36,20 @@ import {
   type ModelTableRow,
 } from "./models-columns";
 import { FilterBar } from "./filter-bar";
+import { ModelsCardsGrid } from "./model-card";
+import { ModelsCompact } from "./models-compact";
 import {
   parseModelFilters,
   serializeModelFilters,
   type ModelFilterState,
 } from "@/lib/use-model-filters";
+import {
+  loadModelsViewMode,
+  parseModelsViewMode,
+  persistModelsViewMode,
+  viewModeQueryPatch,
+  type ModelsViewMode,
+} from "@/lib/models-view-mode";
 
 export type ModelsListPage = {
   nextCursor: string | null;
@@ -230,15 +238,60 @@ export function ModelsTable({
     ...DEFAULT_COLUMN_IDS,
   ]);
   const viewFromUrl = searchParams.get("view");
-  const [viewMode, setViewMode] = useState<"table" | "cards" | "compact">(
-    viewFromUrl === "cards" || viewFromUrl === "compact" ? viewFromUrl : "table",
+  const [viewMode, setViewMode] = useState<ModelsViewMode>(() =>
+    parseModelsViewMode(viewFromUrl, "table"),
   );
+  const [actionBusyId, setActionBusyId] = useState<string | null>(null);
 
-  // Hydrate column prefs + URL view/density
+  // Hydrate column prefs + URL/local view/density
   useEffect(() => {
     setVisibleColumns(loadVisibleColumns());
     const v = searchParams.get("view");
-    if (v === "table" || v === "cards" || v === "compact") setViewMode(v);
+    if (v === "table" || v === "cards" || v === "compact") {
+      setViewMode(v);
+      persistModelsViewMode(v);
+    } else {
+      const stored = loadModelsViewMode();
+      setViewMode(stored);
+      if (stored !== "table") {
+        // Reflect remembered mode into the URL without wiping filters.
+        const next = new URLSearchParams(searchParams.toString());
+        next.set("view", stored);
+        const q = next.toString();
+        router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+      }
+    }
+    const d = searchParams.get("density");
+    if (d === "comfortable" || d === "standard" || d === "compact") {
+      setDensity(d);
+    }
+    const cols = searchParams.get("cols");
+    if (cols) {
+      const allowed = new Set<string>([
+        ...DEFAULT_COLUMN_IDS,
+        ...OPTIONAL_COLUMN_IDS,
+      ]);
+      const ids = cols
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s): s is ModelColumnId => allowed.has(s));
+      if (ids.length > 0) {
+        if (!ids.includes("model")) ids.unshift("model");
+        setVisibleColumns(ids);
+      }
+    }
+    // Intentionally run once on mount for localStorage hydrate; URL-driven
+    // updates are handled below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount hydrate
+  }, []);
+
+  // Keep viewMode in sync when URL changes (saved views, back/forward)
+  useEffect(() => {
+    const v = searchParams.get("view");
+    if (v === "table" || v === "cards" || v === "compact") {
+      setViewMode(v);
+      persistModelsViewMode(v);
+    }
     const d = searchParams.get("density");
     if (d === "comfortable" || d === "standard" || d === "compact") {
       setDensity(d);
@@ -503,6 +556,111 @@ export function ModelsTable({
     [openDrawer, compare, router],
   );
 
+  const toggleSelectModel = useCallback(
+    (model: ModelTableRow) => {
+      if (compare.isSelected(model.id)) {
+        compare.remove(model.id);
+        setSelectionNotice(null);
+        return;
+      }
+      if (compare.selectedIds.length >= compare.max) {
+        setSelectionNotice(
+          `Compare is limited to ${compare.max} models. Remove one before adding another.`,
+        );
+        return;
+      }
+      compare.add({ id: model.id, name: model.name });
+      setSelectionNotice(null);
+    },
+    [compare],
+  );
+
+  const compareModel = useCallback(
+    (model: ModelTableRow) => {
+      if (
+        !compare.isSelected(model.id) &&
+        compare.selectedIds.length >= compare.max
+      ) {
+        setSelectionNotice(
+          `Compare is limited to ${compare.max} models. Remove one before adding another.`,
+        );
+        return;
+      }
+      compare.toggle({ id: model.id, name: model.name });
+      setSelectionNotice(null);
+    },
+    [compare],
+  );
+
+  const favouriteModel = useCallback(
+    async (model: ModelTableRow) => {
+      setActionBusyId(model.id);
+      try {
+        const res = await fetch(`/api/v1/models/${encodeURIComponent(model.id)}`, {
+          method: "PATCH",
+          credentials: "same-origin",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ isFavourite: !model.isFavourite }),
+        });
+        if (!res.ok) throw new Error("Favourite update failed");
+        setData((prev) =>
+          prev.map((r) =>
+            r.id === model.id ? { ...r, isFavourite: !model.isFavourite } : r,
+          ),
+        );
+      } catch {
+        setError("Could not update favourite");
+      } finally {
+        setActionBusyId(null);
+      }
+    },
+    [],
+  );
+
+  const editModel = useCallback(
+    (model: ModelTableRow) => {
+      router.push(`/models/${encodeURIComponent(model.id)}/edit`);
+    },
+    [router],
+  );
+
+  const archiveModel = useCallback(
+    async (model: ModelTableRow) => {
+      setActionBusyId(model.id);
+      try {
+        const res = await fetch(`/api/v1/models/${encodeURIComponent(model.id)}`, {
+          method: "DELETE",
+          credentials: "same-origin",
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) throw new Error("Archive failed");
+        setData((prev) => prev.filter((r) => r.id !== model.id));
+        if (compare.isSelected(model.id)) compare.remove(model.id);
+      } catch {
+        setError("Could not archive model");
+      } finally {
+        setActionBusyId(null);
+      }
+    },
+    [compare],
+  );
+
+  const changeViewMode = useCallback(
+    (v: ModelsViewMode) => {
+      setViewMode(v);
+      persistModelsViewMode(v);
+      if (v === "compact") setDensity("compact");
+      else if (v === "cards") setDensity("comfortable");
+      else setDensity("standard");
+      // Only patch view chrome — filters, sort, page, selection stay.
+      replaceQuery(viewModeQueryPatch(v));
+    },
+    [replaceQuery, setDensity],
+  );
+
   const toggleColumn = (id: ModelColumnId) => {
     if (id === "model") return; // identity always on
     setVisibleColumns((prev) => {
@@ -578,18 +736,9 @@ export function ModelsTable({
             size="sm"
             value={viewMode}
             onChange={(v) => {
-              setViewMode(v);
-              if (v === "compact") setDensity("compact");
-              else if (v === "table") setDensity("standard");
-              replaceQuery({
-                view: v,
-                density:
-                  v === "compact"
-                    ? "compact"
-                    : v === "cards"
-                      ? "comfortable"
-                      : "standard",
-              });
+              if (v === "table" || v === "cards" || v === "compact") {
+                changeViewMode(v);
+              }
             }}
             options={[
               { value: "table", label: "Table" },
@@ -683,124 +832,152 @@ export function ModelsTable({
 
       <FilterBar />
 
+      {selectionNotice ? (
+        <div
+          role="status"
+          data-testid="compare-cap-notice"
+          style={{
+            marginBottom: "var(--space-2)",
+            padding: "var(--space-2) var(--space-3)",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--warn-bg)",
+            background: "var(--warn-bg)",
+            color: "var(--warn)",
+            fontSize: "var(--text-meta-size)",
+          }}
+        >
+          {selectionNotice}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div
+          role="alert"
+          style={{
+            marginBottom: "var(--space-2)",
+            color: "var(--danger)",
+            fontSize: "var(--text-meta-size)",
+          }}
+        >
+          {error}
+        </div>
+      ) : null}
+
       {viewMode === "cards" ? (
-        <EmptyState
-          title="Cards view coming next"
-          message="The cards layout lands in the models-cards phase. Switch back to Table."
+        <div style={{ marginBottom: 0 }}>
+          <ModelsCardsGrid
+            models={data}
+            selectedIds={compare.selectedIds}
+            loading={loading}
+            busyId={actionBusyId}
+            onOpen={openModel}
+            onToggleSelect={toggleSelectModel}
+            onCompare={compareModel}
+            onFavourite={(m) => {
+              void favouriteModel(m);
+            }}
+            onEdit={editModel}
+            onArchive={(m) => {
+              void archiveModel(m);
+            }}
+          />
+        </div>
+      ) : viewMode === "compact" ? (
+        <ModelsCompact
+          models={data}
+          selectedIds={compare.selectedIds}
+          loading={loading}
+          onOpen={openModel}
+          onToggleSelect={toggleSelectModel}
         />
       ) : (
-        <>
-          {selectionNotice ? (
-            <div
-              role="status"
-              data-testid="compare-cap-notice"
-              style={{
-                marginBottom: "var(--space-2)",
-                padding: "var(--space-2) var(--space-3)",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--warn-bg)",
-                background: "var(--warn-bg)",
-                color: "var(--warn)",
-                fontSize: "var(--text-meta-size)",
-              }}
-            >
-              {selectionNotice}
-            </div>
-          ) : null}
-
-          {error ? (
-            <div
-              role="alert"
-              style={{
-                marginBottom: "var(--space-2)",
-                color: "var(--danger)",
-                fontSize: "var(--text-meta-size)",
-              }}
-            >
-              {error}
-            </div>
-          ) : null}
-
-          <div style={{ opacity: loading ? 0.6 : 1 }}>
-            <DataTable<ModelTableRow>
-              data={data}
-              columns={columns}
-              density={density}
-              enableSelection
-              stickySelection
-              manualSorting
-              sorting={sorting}
-              onSortingChange={onSortingChange}
-              rowSelection={rowSelection}
-              onRowSelectionChange={onRowSelectionChange}
-              getRowId={(row) => row.id}
-              onRowClick={openModel}
-              emptyMessage={loading ? "Loading…" : "No models found"}
-              data-testid="models-data-table"
-              style={{
-                borderBottomLeftRadius: 0,
-                borderBottomRightRadius: 0,
-              }}
-            />
-          </div>
-
-          <div style={footer} data-testid="models-table-footer">
-            <span>
-              {compare.selected.length} selected
-            </span>
-            <span style={{ color: "var(--text-faint)" }}>
-              Select up to {compare.max} models to compare
-            </span>
-            <span style={{ flex: 1 }} />
-            <label
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "var(--space-2)",
-              }}
-            >
-              Rows per page:
-              <Select
-                aria-label="Rows per page"
-                options={PAGE_SIZE_OPTIONS.map((v) => ({
-                  value: v,
-                  label: v,
-                }))}
-                value={String(limit)}
-                onChange={(v) =>
-                  replaceQuery({ limit: v, page: "1" })
-                }
-                style={{ width: 72 }}
-              />
-            </label>
-            <span data-testid="models-page-range">
-              {from}–{to} of {total}
-            </span>
-            <div style={{ display: "inline-flex", gap: "var(--space-1)" }}>
-              <IconButton
-                label="Previous page"
-                disabled={page <= 1 || loading}
-                onClick={() =>
-                  replaceQuery({ page: String(Math.max(1, page - 1)) })
-                }
-              >
-                ‹
-              </IconButton>
-              <IconButton
-                label="Next page"
-                disabled={page >= totalPages || loading}
-                onClick={() =>
-                  replaceQuery({
-                    page: String(Math.min(totalPages, page + 1)),
-                  })
-                }
-              >
-                ›
-              </IconButton>
-            </div>
-          </div>
-        </>
+        <div style={{ opacity: loading ? 0.6 : 1 }}>
+          <DataTable<ModelTableRow>
+            data={data}
+            columns={columns}
+            density={density}
+            enableSelection
+            stickySelection
+            manualSorting
+            sorting={sorting}
+            onSortingChange={onSortingChange}
+            rowSelection={rowSelection}
+            onRowSelectionChange={onRowSelectionChange}
+            getRowId={(row) => row.id}
+            onRowClick={openModel}
+            emptyMessage={loading ? "Loading…" : "No models found"}
+            data-testid="models-data-table"
+            style={{
+              borderBottomLeftRadius: 0,
+              borderBottomRightRadius: 0,
+            }}
+          />
+        </div>
       )}
+
+      <div
+        style={{
+          ...footer,
+          borderTop:
+            viewMode === "cards" ? "1px solid var(--border)" : footer.borderTop,
+          borderRadius:
+            viewMode === "cards"
+              ? "var(--radius-lg)"
+              : "0 0 var(--radius-lg) var(--radius-lg)",
+          marginTop: viewMode === "cards" ? "var(--space-3)" : 0,
+        }}
+        data-testid="models-table-footer"
+      >
+        <span>{compare.selected.length} selected</span>
+        <span style={{ color: "var(--text-faint)" }}>
+          Select up to {compare.max} models to compare
+        </span>
+        <span style={{ flex: 1 }} />
+        <label
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-2)",
+          }}
+        >
+          Rows per page:
+          <Select
+            aria-label="Rows per page"
+            options={PAGE_SIZE_OPTIONS.map((v) => ({
+              value: v,
+              label: v,
+            }))}
+            value={String(limit)}
+            onChange={(v) => replaceQuery({ limit: v, page: "1" })}
+            style={{ width: 72 }}
+          />
+        </label>
+        <span data-testid="models-page-range">
+          {from}–{to} of {total}
+        </span>
+        <div style={{ display: "inline-flex", gap: "var(--space-1)" }}>
+          <IconButton
+            label="Previous page"
+            disabled={page <= 1 || loading}
+            onClick={() =>
+              replaceQuery({ page: String(Math.max(1, page - 1)) })
+            }
+          >
+            ‹
+          </IconButton>
+          <IconButton
+            label="Next page"
+            disabled={page >= totalPages || loading}
+            onClick={() =>
+              replaceQuery({
+                page: String(Math.min(totalPages, page + 1)),
+              })
+            }
+          >
+            ›
+          </IconButton>
+        </div>
+      </div>
     </div>
   );
 }
