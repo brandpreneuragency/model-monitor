@@ -1,4 +1,4 @@
-import { createSavedView, listSavedViews } from "@model-monitor/database";
+import { createTag, listTags } from "@model-monitor/database";
 import { db } from "@/lib/db";
 import {
   auditContext,
@@ -9,15 +9,11 @@ import {
   requireApiSession,
 } from "@/lib/api";
 
-/**
- * Table-backed saved views (`saved_views`).
- * The legacy app_settings blob key `admin.savedViews` is left in place (deferred drop).
- */
 export async function GET(request: Request) {
   const requestId = getRequestId(request);
   try {
     await requireApiSession(requestId);
-    const data = await listSavedViews(db);
+    const data = await listTags(db);
     return jsonOk({ data, meta: { requestId } }, { requestId });
   } catch (error) {
     return jsonError(error, requestId);
@@ -29,8 +25,8 @@ export async function POST(request: Request) {
   try {
     const session = await requireApiSession(requestId);
     const body = await parseJsonBody(request);
-    const view = await createSavedView(db, body, auditContext(request, session.userId));
-    return jsonOk(view, { status: 201, requestId });
+    const tag = await createTag(db, body, auditContext(request, session.userId));
+    return jsonOk(tag, { status: 201, requestId });
   } catch (error) {
     return jsonError(error, requestId);
   }

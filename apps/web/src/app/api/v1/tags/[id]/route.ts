@@ -1,4 +1,4 @@
-import { deleteSavedView, getSavedView, updateSavedView } from "@model-monitor/database";
+import { deleteTag, getTag, updateTag } from "@model-monitor/database";
 import { db } from "@/lib/db";
 import {
   auditContext,
@@ -11,16 +11,16 @@ import {
 } from "@/lib/api";
 
 interface RouteContext {
-  params: Promise<{ viewId: string }>;
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(request: Request, context: RouteContext) {
   const requestId = getRequestId(request);
   try {
     await requireApiSession(requestId);
-    const { viewId } = await context.params;
-    const view = await getSavedView(db, parsePathUuid(viewId, "viewId"));
-    return jsonOk(view, { requestId });
+    const { id } = await context.params;
+    const tag = await getTag(db, parsePathUuid(id, "id"));
+    return jsonOk(tag, { requestId });
   } catch (error) {
     return jsonError(error, requestId);
   }
@@ -30,28 +30,29 @@ export async function PATCH(request: Request, context: RouteContext) {
   const requestId = getRequestId(request);
   try {
     const session = await requireApiSession(requestId);
-    const { viewId } = await context.params;
+    const { id } = await context.params;
     const body = await parseJsonBody(request);
-    const view = await updateSavedView(
+    const tag = await updateTag(
       db,
-      parsePathUuid(viewId, "viewId"),
+      parsePathUuid(id, "id"),
       body,
       auditContext(request, session.userId),
     );
-    return jsonOk(view, { requestId });
+    return jsonOk(tag, { requestId });
   } catch (error) {
     return jsonError(error, requestId);
   }
 }
 
+/** Delete tag (model_tags cascade). */
 export async function DELETE(request: Request, context: RouteContext) {
   const requestId = getRequestId(request);
   try {
     const session = await requireApiSession(requestId);
-    const { viewId } = await context.params;
-    const result = await deleteSavedView(
+    const { id } = await context.params;
+    const result = await deleteTag(
       db,
-      parsePathUuid(viewId, "viewId"),
+      parsePathUuid(id, "id"),
       auditContext(request, session.userId),
     );
     return jsonOk({ data: result, meta: { requestId } }, { requestId });

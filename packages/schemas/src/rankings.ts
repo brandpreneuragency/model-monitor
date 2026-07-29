@@ -192,22 +192,74 @@ export const tagSchema = z.object({
   slug: z.string().trim().min(1).max(120),
   color: z.string().trim().min(1).max(40).nullable(),
   category: tagCategorySchema,
+  /** Derived aggregate — never a stored counter column. */
+  usageCount: z.number().int().nonnegative().optional(),
   createdAt: z.string().datetime(),
 });
 
-export const createTagSchema = z.object({
-  name: z.string().trim().min(1).max(120),
-  slug: z.string().trim().min(1).max(120).optional(),
-  color: z.string().trim().min(1).max(40).nullable().optional(),
-  category: tagCategorySchema,
-});
+const tagColorField = z.string().trim().min(1).max(40).nullable().optional();
 
-export const updateTagSchema = createTagSchema.partial();
+export const createTagSchema = z
+  .object({
+    name: z.string().trim().min(1).max(120),
+    slug: z.string().trim().min(1).max(120).optional(),
+    color: tagColorField,
+    /** British alias accepted; normalised to `color`. */
+    colour: tagColorField,
+    category: tagCategorySchema,
+  })
+  .transform((v) => {
+    const color = v.color !== undefined ? v.color : v.colour;
+    return {
+      name: v.name,
+      slug: v.slug,
+      category: v.category,
+      color,
+    };
+  });
+
+export const updateTagSchema = z
+  .object({
+    name: z.string().trim().min(1).max(120).optional(),
+    slug: z.string().trim().min(1).max(120).optional(),
+    color: tagColorField,
+    colour: tagColorField,
+    category: tagCategorySchema.optional(),
+  })
+  .transform((v) => {
+    const out: {
+      name?: string;
+      slug?: string;
+      category?: z.infer<typeof tagCategorySchema>;
+      color?: string | null;
+    } = {};
+    if (v.name !== undefined) out.name = v.name;
+    if (v.slug !== undefined) out.slug = v.slug;
+    if (v.category !== undefined) out.category = v.category;
+    if (v.color !== undefined) out.color = v.color;
+    else if (v.colour !== undefined) out.color = v.colour;
+    return out;
+  });
 
 export const modelTagSchema = z.object({
   modelId: z.string().uuid(),
   tagId: z.string().uuid(),
   createdAt: z.string().datetime(),
+});
+
+export const mergeTagsSchema = z
+  .object({
+    sourceTagId: z.string().uuid(),
+    targetTagId: z.string().uuid(),
+  })
+  .refine((v) => v.sourceTagId !== v.targetTagId, {
+    message: "sourceTagId and targetTagId must differ",
+    path: ["targetTagId"],
+  });
+
+/** PUT /models/[modelId]/tags — full replace of the model's tag set. */
+export const setModelTagsSchema = z.object({
+  tagIds: z.array(z.string().uuid()).max(200),
 });
 
 // ── Saved views (DB table — supersedes app_settings JSON blob) ─
@@ -241,6 +293,11 @@ export const createRankingSavedViewSchema = z.object({
 
 export const updateRankingSavedViewSchema = createRankingSavedViewSchema.partial();
 
+/** Table-backed saved-view contracts (preferred names for API routes). */
+export const tableSavedViewSchema = rankingSavedViewSchema;
+export const createTableSavedViewSchema = createRankingSavedViewSchema;
+export const updateTableSavedViewSchema = updateRankingSavedViewSchema;
+
 export type PersonalConfidence = z.infer<typeof personalConfidenceSchema>;
 export type TagCategory = z.infer<typeof tagCategorySchema>;
 export type ViewMode = z.infer<typeof viewModeSchema>;
@@ -265,9 +322,14 @@ export type Tag = z.infer<typeof tagSchema>;
 export type CreateTag = z.infer<typeof createTagSchema>;
 export type UpdateTag = z.infer<typeof updateTagSchema>;
 export type ModelTag = z.infer<typeof modelTagSchema>;
+export type MergeTags = z.infer<typeof mergeTagsSchema>;
+export type SetModelTags = z.infer<typeof setModelTagsSchema>;
 export type RankingSavedView = z.infer<typeof rankingSavedViewSchema>;
 export type CreateRankingSavedView = z.infer<typeof createRankingSavedViewSchema>;
 export type UpdateRankingSavedView = z.infer<typeof updateRankingSavedViewSchema>;
+export type TableSavedView = RankingSavedView;
+export type CreateTableSavedView = CreateRankingSavedView;
+export type UpdateTableSavedView = UpdateRankingSavedView;
 
 // ── Computed overall score (never stored) ──────────────────────
 // Personal 1–10 and external 0–100. External is scaled to 0–10 so the

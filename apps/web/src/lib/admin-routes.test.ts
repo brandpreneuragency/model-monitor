@@ -83,6 +83,8 @@ vi.mock("@/lib/api", () => ({
 import { GET as getViews, POST as postViews } from "../app/api/v1/saved-views/route";
 import { DELETE as deleteView, PATCH as patchView } from "../app/api/v1/saved-views/[viewId]/route";
 import { GET as getVerification, PATCH as patchVerification } from "../app/api/v1/settings/verification/route";
+import { ZodError } from "zod";
+import { createRankingSavedViewSchema } from "@model-monitor/schemas";
 
 type Json = Record<string, unknown>;
 const id = "11111111-1111-4111-8111-111111111111";
@@ -110,17 +112,37 @@ describe("administration routes (surviving settings + saved views)", () => {
   it("maps malformed settings and saved-view bodies to 400", async () => {
     mocks.session.userId = "user-1";
     expect((await patchVerification(request("PATCH", "/api/v1/settings/verification", { intervalDays: 0 }))).status).toBe(400);
+    // Table-backed create validates via Zod in the service layer; empty name fails.
+    mocks.createSavedView.mockImplementation(() => {
+      try {
+        createRankingSavedViewSchema.parse({ name: "" });
+      } catch (e) {
+        if (e instanceof ZodError) throw e;
+        throw e;
+      }
+      throw new Error("unreachable");
+    });
     expect((await postViews(request("POST", "/api/v1/saved-views", { name: "" }))).status).toBe(400);
   });
 
-  it("uses the authenticated owner for saved-view PATCH/DELETE and maps missing ids to 404", async () => {
+  it("uses table-backed saved-view service for PATCH/DELETE and maps missing ids to 404", async () => {
     mocks.session.userId = "owner-1";
     mocks.updateSavedView.mockRejectedValue(new mocks.TestModelServiceError("NOT_FOUND", "Saved view not found", 404));
     mocks.deleteSavedView.mockRejectedValue(new mocks.TestModelServiceError("NOT_FOUND", "Saved view not found", 404));
     expect((await patchView(request("PATCH", `/api/v1/saved-views/${id}`, { name: "x" }), params(id))).status).toBe(404);
     expect((await deleteView(request("DELETE", `/api/v1/saved-views/${id}`), params(id))).status).toBe(404);
-    expect(mocks.updateSavedView).toHaveBeenCalledWith(mocks.db, "owner-1", id, { name: "x" }, "req-admin");
-    expect(mocks.deleteSavedView).toHaveBeenCalledWith(mocks.db, "owner-1", id, "req-admin");
+    // Signature: (db, viewId, body, auditContext)
+    expect(mocks.updateSavedView).toHaveBeenCalledWith(
+      mocks.db,
+      id,
+      { name: "x" },
+      { requestId: "req-admin", actorUserId: "owner-1" },
+    );
+    expect(mocks.deleteSavedView).toHaveBeenCalledWith(
+      mocks.db,
+      id,
+      { requestId: "req-admin", actorUserId: "owner-1" },
+    );
   });
 
   it("returns verification response shapes", async () => {

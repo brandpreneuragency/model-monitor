@@ -11,6 +11,8 @@ Tables retained during redesign build; drop in `deploy-finalize`:
 
 (none of the above are dropped by migrations until deploy-finalize)
 
+- `app_settings` key `admin.savedViews` (and any `admin.savedViews.<userId>` rows) — superseded by `saved_views` table; blob left unread by new API until deploy-finalize
+
 ## Deferred issues
 
 (none yet)
@@ -609,3 +611,46 @@ git checkout -- apps/web/src/app/api packages/database/src/services \
   packages/schemas/src/rankings.ts
 # remove new route dirs if needed: skills ratings ranking-profiles leaderboard model ratings
 ```
+
+### api-tags-views (2026-07-29T00:19Z) — RESULT=PASS
+
+#### Built
+- Tags API: GET/POST list+create; GET/PATCH/DELETE by id; POST `/tags/merge`.
+  List carries derived `usageCount` (aggregate over `model_tags`); no stored counter.
+  Merge moves assignments source→target with dedupe in one transaction, then archives
+  the source (hard-delete — `tags` has no status column).
+- `PUT /api/v1/models/[modelId]/tags` full-replaces a model's tag set; GET lists them.
+- Saved views API rewired from `app_settings` JSON blob to the `saved_views` table.
+  Round-trips filters, sort, visibleColumns, viewMode, density.
+- Legacy blob key `admin.savedViews` left in place; recorded under Deferred drops.
+
+#### Verified
+- `pnpm lint`, `typecheck`, `test:unit`, `test:integration` all PASS.
+- New `api-tags-views.integration.test.ts`: 7 tests (merge+dedupe, usage counts,
+  five-aspect round-trip, 15 seeded defaults, set/replace, delete cascade).
+- Integration: 14 files, 107 passed | 2 skipped.
+- Live app healthy (additive-only).
+
+#### Files
+- `packages/database/src/services/tags-views.ts` (new)
+- `packages/database/src/api-tags-views.integration.test.ts` (new)
+- `packages/database/src/services/admin.ts` (blob CRUD removed)
+- `packages/database/src/index.ts`
+- `packages/schemas/src/rankings.ts`
+- `apps/web/src/app/api/v1/tags/**`, `models/[modelId]/tags/**`, `saved-views/**`
+- `apps/web/src/lib/admin-routes.test.ts`
+
+#### Deferred / notes
+- `app_settings` key `admin.savedViews` retained until deploy-finalize.
+- Tag archive on merge = delete after reassignment (schema has no tag status).
+
+#### Rollback (this phase only)
+```
+git checkout -- apps/web/src/app/api packages/database/src/services \
+  packages/database/src/index.ts packages/schemas/src/rankings.ts \
+  apps/web/src/lib/admin-routes.test.ts
+rm -f packages/database/src/api-tags-views.integration.test.ts \
+  packages/database/src/services/tags-views.ts
+rm -rf apps/web/src/app/api/v1/tags apps/web/src/app/api/v1/models/[modelId]/tags
+```
+
