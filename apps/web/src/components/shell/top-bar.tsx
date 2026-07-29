@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useState, type CSSProperties } from "react";
+import { Suspense, useCallback, useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Filter, Plus, Search } from "lucide-react";
 import { Button } from "@model-monitor/ui";
 import { SavedViews } from "@/components/models/saved-views";
+import { AddModelDialog, type OptionItem } from "@/components/models/forms";
 import { CommandPalette } from "./command-palette";
 
 function SavedViewsFallback() {
@@ -31,8 +32,60 @@ function SavedViewsFallback() {
 
 export function TopBar() {
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [developers, setDevelopers] = useState<OptionItem[]>([]);
+  const [providers, setProviders] = useState<OptionItem[]>([]);
+  const [plans, setPlans] = useState<OptionItem[]>([]);
   const pathname = usePathname();
   const router = useRouter();
+
+  const loadFormOptions = useCallback(async () => {
+    try {
+      const [devRes, provRes, planRes] = await Promise.all([
+        fetch("/api/v1/developers"),
+        fetch("/api/v1/access-providers"),
+        fetch("/api/v1/plans"),
+      ]);
+      if (devRes.ok) {
+        const body = (await devRes.json()) as {
+          data?: Array<{ id: string; name: string }>;
+        };
+        setDevelopers(
+          (body.data ?? []).map((d) => ({ id: d.id, name: d.name })),
+        );
+      }
+      if (provRes.ok) {
+        const body = (await provRes.json()) as {
+          data?: Array<{ id: string; name: string }>;
+        };
+        setProviders(
+          (body.data ?? []).map((p) => ({ id: p.id, name: p.name })),
+        );
+      }
+      if (planRes.ok) {
+        const body = (await planRes.json()) as {
+          data?: Array<{
+            id: string;
+            name: string;
+            accessProviderId?: string;
+          }>;
+        };
+        setPlans(
+          (body.data ?? []).map((p) => ({
+            id: p.id,
+            name: p.name,
+            accessProviderId: p.accessProviderId,
+          })),
+        );
+      }
+    } catch {
+      // options stay empty — form still works name-only
+    }
+  }, []);
+
+  useEffect(() => {
+    if (addOpen) void loadFormOptions();
+  }, [addOpen, loadFormOptions]);
 
   const topbar: CSSProperties = {
     height: "var(--topbar-height)",
@@ -153,12 +206,18 @@ export function TopBar() {
             <Filter size={14} />
           </button>
 
-          <Link href="/models/new" style={{ textDecoration: "none" }}>
-            <Button variant="primary" size="sm" data-testid="topbar-add-model">
-              <Plus size={14} aria-hidden />
-              Add Model
-            </Button>
+          <Link href="/models/new" style={{ textDecoration: "none" }} data-testid="topbar-add-model-page">
+            <span className="sr-only">Full page create</span>
           </Link>
+          <Button
+            variant="primary"
+            size="sm"
+            data-testid="topbar-add-model"
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus size={14} aria-hidden />
+            Add Model
+          </Button>
 
           <button
             type="button"
@@ -184,6 +243,21 @@ export function TopBar() {
       </header>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+
+      <AddModelDialog
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        developers={developers}
+        providers={providers}
+        plans={plans}
+        onCreated={() => {
+          setAddOpen(false);
+          router.refresh();
+          if (!pathname?.startsWith("/models")) {
+            router.push("/models");
+          }
+        }}
+      />
     </>
   );
 }

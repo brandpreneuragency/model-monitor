@@ -885,3 +885,32 @@ git checkout -- apps/web/src
 ```
 
 Evidence: `$RUN_DIR/model-drawer.txt` — `RESULT=PASS`.
+
+
+### model-forms (2026-07-29T02:00Z) — RESULT=PASS
+
+#### Built
+- Forms under `apps/web/src/components/models/forms/`:
+  - **Add Model** two-stage dialog — Save on stage one with only `name` required; Details stage optional (context/speed/vision/reasoning/agent/tags/price/quota/best-use/avoid/overall-read-only/notes + collapsed research).
+  - **Edit Model** wide drawer — six groups with independent Save group (not all-or-nothing).
+  - **Add Provider / Plan / Quota** dialogs using shared Zod write schemas; plan supports multiple inline quotas; quota dialog supports ranges + custom unit/period.
+  - **Rate Model** dialog writes **personal fields only** via `toPersonalRatingPayload` (hard-strips external_*).
+- Top bar **Add Model** opens the dialog (legacy `/models/new` page link retained as sr-only).
+- Unit tests (`forms.test.tsx`) happy paths + name-only create + external score body guard.
+- Integration (`packages/database/src/forms.integration.test.ts`) name-only create, personal rating leaves external_score, provider/plan/multi-quota.
+
+#### Verified
+- `NAME_ONLY_CREATE=PASS`
+- `NO_RAW_HEX=PASS` (forms + top-bar)
+- `pnpm lint` / `typecheck` / `test:unit` / `test:integration` EXIT=0
+- Evidence: `$RUN_DIR/model-forms.txt`
+
+#### Notes / deferred
+- Stage-2 tags are free-text reference on create (no tag ID resolution); price/quota notes fold into description because cost lives on plan.
+- Overall score field is read-only (computed from skills — never stored).
+- Full wiring of Edit/Rate/Provider/Plan dialogs into table row actions deferred to later UI phases if not already covered.
+
+#### Rollback (this phase only)
+```
+git checkout -- apps/web/src packages/database/src/forms.integration.test.ts
+```
