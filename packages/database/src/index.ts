@@ -29,4 +29,5 @@ export * from "./services/subscriptions";
 export * from "./services/imports";
 export * from "./services/admin";
 export * from "./services/users";
+export * from "./services/rankings";
 export { cleanupTestModels } from "./cleanup-test-models";

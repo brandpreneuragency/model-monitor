@@ -87,6 +87,33 @@ export const upsertModelSkillRatingSchema = z.object({
   source: z.string().max(500).nullable().optional(),
 });
 
+/** Body for PUT /models/[modelId]/ratings/[skillId] — ids come from the path. */
+export const upsertModelSkillRatingBodySchema = upsertModelSkillRatingSchema.omit({
+  modelId: true,
+  skillId: true,
+});
+
+export const ratingsListQuerySchema = z.object({
+  skillId: z.string().min(1).optional(),
+  modelId: z.string().uuid().optional(),
+  includeHidden: z
+    .union([z.literal("true"), z.literal("false"), z.boolean()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined) return undefined;
+      if (typeof v === "boolean") return v;
+      return v === "true";
+    }),
+});
+
+export const leaderboardTypeSchema = z.enum(["personal", "external", "combined"]);
+
+export const leaderboardQuerySchema = z.object({
+  profileId: z.string().min(1).optional(),
+  skillId: z.string().min(1).optional(),
+  type: leaderboardTypeSchema.default("combined"),
+});
+
 // ── Ranking profiles ───────────────────────────────────────────
 
 export const rankingProfileSchema = z.object({
@@ -123,6 +150,38 @@ export const upsertRankingProfileSkillSchema = z.object({
   profileId: z.string().uuid(),
   skillId: z.string().uuid(),
   weight: z.number(),
+});
+
+/** PUT /ranking-profiles/[id]/weights — full replace of per-skill weights. */
+export const setRankingProfileWeightsSchema = z.object({
+  weights: z
+    .array(
+      z.object({
+        skillId: z.string().uuid(),
+        weight: z.number().min(0),
+      }),
+    )
+    .max(64),
+});
+
+export const skillsListQuerySchema = z.object({
+  search: z.string().optional(),
+  archived: z
+    .union([z.literal("true"), z.literal("false"), z.boolean()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined) return undefined;
+      if (typeof v === "boolean") return v;
+      return v === "true";
+    }),
+  includeArchived: z
+    .union([z.literal("true"), z.literal("false"), z.boolean()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined) return undefined;
+      if (typeof v === "boolean") return v;
+      return v === "true";
+    }),
 });
 
 // ── Tags ───────────────────────────────────────────────────────
@@ -191,11 +250,17 @@ export type CreateSkill = z.infer<typeof createSkillSchema>;
 export type UpdateSkill = z.infer<typeof updateSkillSchema>;
 export type ModelSkillRating = z.infer<typeof modelSkillRatingSchema>;
 export type UpsertModelSkillRating = z.infer<typeof upsertModelSkillRatingSchema>;
+export type UpsertModelSkillRatingBody = z.infer<typeof upsertModelSkillRatingBodySchema>;
+export type RatingsListQuery = z.infer<typeof ratingsListQuerySchema>;
+export type LeaderboardType = z.infer<typeof leaderboardTypeSchema>;
+export type LeaderboardQuery = z.infer<typeof leaderboardQuerySchema>;
 export type RankingProfile = z.infer<typeof rankingProfileSchema>;
 export type CreateRankingProfile = z.infer<typeof createRankingProfileSchema>;
 export type UpdateRankingProfile = z.infer<typeof updateRankingProfileSchema>;
 export type RankingProfileSkill = z.infer<typeof rankingProfileSkillSchema>;
 export type UpsertRankingProfileSkill = z.infer<typeof upsertRankingProfileSkillSchema>;
+export type SetRankingProfileWeights = z.infer<typeof setRankingProfileWeightsSchema>;
+export type SkillsListQuery = z.infer<typeof skillsListQuerySchema>;
 export type Tag = z.infer<typeof tagSchema>;
 export type CreateTag = z.infer<typeof createTagSchema>;
 export type UpdateTag = z.infer<typeof updateTagSchema>;

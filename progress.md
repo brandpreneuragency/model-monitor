@@ -569,3 +569,43 @@ git checkout -- apps/web/src/app/api packages/database/src/services \
 # ALTER TABLE access_providers DROP COLUMN IF EXISTS logo_url, DROP COLUMN IF EXISTS colour;
 ```
 
+### api-rankings (2026-07-28T00:02Z) — RESULT=PASS
+
+#### Built
+- Skills API: GET/POST list+create; GET/PATCH/DELETE by id. DELETE archives the skill and
+  marks its ratings `hidden=true` (rows retained); drops profile weights for that skill.
+- Ratings API: GET `/api/v1/ratings?skillId=` (+ optional modelId); PUT
+  `/api/v1/models/[modelId]/ratings/[skillId]` upserts personal/external scores, confidence,
+  rank override, tested/testedAt, notes, hidden, pinned. Response always carries both scores
+  plus `scoreBasis` — never a blended average field.
+- Ranking profiles: GET/POST list+create; GET/PATCH/DELETE by id; PUT `.../weights` full
+  replace of per-skill weights. Cannot delete the default profile.
+- Leaderboard GET: `profileId` and/or `skillId`, `type=personal|external|combined`.
+  Order: pinned → rank_override asc → score desc → name. Hidden excluded.
+  `type=personal` on seed returns 51 rows with null personal scores (UI untested state).
+
+#### Verified
+- `pnpm lint`, `typecheck`, `test:unit`, `test:integration` all PASS.
+- New `api-rankings.integration.test.ts`: 9 tests covering weight reorder, pinned,
+  rank_override, hidden, personal null×51, no blended-score fields.
+- Integration: 13 files, 100 passed | 2 skipped.
+
+#### Files
+- `packages/database/src/services/rankings.ts` (new)
+- `packages/database/src/api-rankings.integration.test.ts` (new)
+- `packages/schemas/src/rankings.ts`
+- `packages/database/src/index.ts`
+- `apps/web/src/app/api/v1/{skills,ratings,ranking-profiles,leaderboard,models/.../ratings}/**`
+
+#### Deferred / notes
+- Profile-scoped leaderboard surfaces `overallScore` + `scoreBasis`; per-skill personal and
+  external columns are null on profile boards (use skill board or ratings API for those).
+- Rating mutations intentionally skip audit (high-frequency personal edits).
+
+#### Rollback (this phase only)
+```
+git checkout -- apps/web/src/app/api packages/database/src/services \
+  packages/database/src/index.ts packages/database/src/api-rankings.integration.test.ts \
+  packages/schemas/src/rankings.ts
+# remove new route dirs if needed: skills ratings ranking-profiles leaderboard model ratings
+```
