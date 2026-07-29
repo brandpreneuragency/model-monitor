@@ -1,13 +1,38 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { Suspense, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { Filter, Plus, Search } from "lucide-react";
 import { Button } from "@model-monitor/ui";
+import { SavedViews } from "@/components/models/saved-views";
 import { CommandPalette } from "./command-palette";
+
+function SavedViewsFallback() {
+  return (
+    <div
+      data-testid="saved-view-selector"
+      style={{
+        background: "var(--bg-input)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        padding: "var(--space-1_5) var(--space-3)",
+        color: "var(--text-muted)",
+        fontSize: "var(--text-meta-size)",
+        height: 34,
+        display: "inline-flex",
+        alignItems: "center",
+      }}
+    >
+      Saved Views…
+    </div>
+  );
+}
 
 export function TopBar() {
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
   const topbar: CSSProperties = {
     height: "var(--topbar-height)",
@@ -58,20 +83,6 @@ export function TopBar() {
     flexShrink: 0,
   };
 
-  const selectPill: CSSProperties = {
-    background: "var(--bg-input)",
-    border: "1px solid var(--border)",
-    borderRadius: "var(--radius-md)",
-    padding: "var(--space-1_5) var(--space-3)",
-    color: "var(--text-muted)",
-    fontSize: "var(--text-meta-size)",
-    height: 34,
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "var(--space-1)",
-    cursor: "default",
-  };
-
   const iconBtn: CSSProperties = {
     width: 34,
     height: 34,
@@ -98,6 +109,17 @@ export function TopBar() {
     color: "var(--advanced)",
   };
 
+  const focusFilters = () => {
+    if (pathname === "/models" || pathname.startsWith("/models?")) {
+      const el = document.querySelector("[data-testid='models-filter-bar']");
+      if (el && "scrollIntoView" in el) {
+        (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+    }
+    router.push("/models");
+  };
+
   return (
     <>
       <header style={topbar} data-testid="app-topbar">
@@ -116,16 +138,9 @@ export function TopBar() {
         </button>
 
         <div style={actions}>
-          <div
-            style={selectPill}
-            data-testid="saved-view-selector"
-            title="Saved view"
-          >
-            My Active View
-            <span aria-hidden style={{ color: "var(--text-faint)" }}>
-              ▾
-            </span>
-          </div>
+          <Suspense fallback={<SavedViewsFallback />}>
+            <SavedViews />
+          </Suspense>
 
           <button
             type="button"
@@ -133,6 +148,7 @@ export function TopBar() {
             aria-label="Filters"
             data-testid="topbar-filter"
             title="Filters"
+            onClick={focusFilters}
           >
             <Filter size={14} />
           </button>

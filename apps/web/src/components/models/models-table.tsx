@@ -36,6 +36,12 @@ import {
   type ModelColumnId,
   type ModelTableRow,
 } from "./models-columns";
+import { FilterBar } from "./filter-bar";
+import {
+  parseModelFilters,
+  serializeModelFilters,
+  type ModelFilterState,
+} from "@/lib/use-model-filters";
 
 export type ModelsListPage = {
   nextCursor: string | null;
@@ -183,7 +189,12 @@ export function ModelsTable({
   initialQuery,
 }: {
   initialData: ModelsListResponse;
-  initialQuery: { page: number; limit: number; sort: string };
+  initialQuery: {
+    page: number;
+    limit: number;
+    sort: string;
+    filters?: ModelFilterState;
+  };
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -201,6 +212,15 @@ export function ModelsTable({
   const sort =
     searchParams.get("sort") ?? initialQuery.sort ?? "name";
 
+  const filters = useMemo(
+    () => parseModelFilters(searchParams),
+    [searchParams],
+  );
+  const filtersKey = useMemo(
+    () => serializeModelFilters(filters).toString(),
+    [filters],
+  );
+
   const [data, setData] = useState<ModelTableRow[]>(initialData.data);
   const [pageInfo, setPageInfo] = useState<ModelsListPage>(initialData.page);
   const [loading, setLoading] = useState(false);
@@ -209,26 +229,81 @@ export function ModelsTable({
   const [visibleColumns, setVisibleColumns] = useState<ModelColumnId[]>([
     ...DEFAULT_COLUMN_IDS,
   ]);
+  const viewFromUrl = searchParams.get("view");
   const [viewMode, setViewMode] = useState<"table" | "cards" | "compact">(
-    "table",
+    viewFromUrl === "cards" || viewFromUrl === "compact" ? viewFromUrl : "table",
   );
 
-  // Hydrate column prefs
+  // Hydrate column prefs + URL view/density
   useEffect(() => {
     setVisibleColumns(loadVisibleColumns());
-  }, []);
+    const v = searchParams.get("view");
+    if (v === "table" || v === "cards" || v === "compact") setViewMode(v);
+    const d = searchParams.get("density");
+    if (d === "comfortable" || d === "standard" || d === "compact") {
+      setDensity(d);
+    }
+    const cols = searchParams.get("cols");
+    if (cols) {
+      const allowed = new Set<string>([
+        ...DEFAULT_COLUMN_IDS,
+        ...OPTIONAL_COLUMN_IDS,
+      ]);
+      const ids = cols
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s): s is ModelColumnId => allowed.has(s));
+      if (ids.length > 0) {
+        if (!ids.includes("model")) ids.unshift("model");
+        setVisibleColumns(ids);
+      }
+    }
+  }, [searchParams, setDensity]);
+
+  // Saved-view application event (columns / mode)
+  useEffect(() => {
+    const handler = (ev: Event) => {
+      const detail = (ev as CustomEvent).detail as
+        | {
+            viewMode?: "table" | "cards" | "compact";
+            columns?: ModelColumnId[];
+            density?: "comfortable" | "standard" | "compact";
+          }
+        | undefined;
+      if (!detail) return;
+      if (detail.viewMode) setViewMode(detail.viewMode);
+      if (detail.columns?.length) setVisibleColumns(detail.columns);
+      if (detail.density) setDensity(detail.density);
+    };
+    window.addEventListener("mm:saved-view-applied", handler);
+    return () => window.removeEventListener("mm:saved-view-applied", handler);
+  }, [setDensity]);
+
+  const initialFiltersKey = useMemo(
+    () => serializeModelFilters(initialQuery.filters ?? {}).toString(),
+    [initialQuery.filters],
+  );
 
   // Sync initial server payload when query matches
   useEffect(() => {
     if (
       page === initialQuery.page &&
       limit === initialQuery.limit &&
-      sort === initialQuery.sort
+      sort === initialQuery.sort &&
+      filtersKey === initialFiltersKey
     ) {
       setData(initialData.data);
       setPageInfo(initialData.page);
     }
-  }, [initialData, initialQuery, page, limit, sort]);
+  }, [
+    initialData,
+    initialQuery,
+    page,
+    limit,
+    sort,
+    filtersKey,
+    initialFiltersKey,
+  ]);
 
   // Client fetch when URL query changes away from SSR payload
   useEffect(() => {
@@ -236,7 +311,8 @@ export function ModelsTable({
     const matchesInitial =
       page === initialQuery.page &&
       limit === initialQuery.limit &&
-      sort === initialQuery.sort;
+      sort === initialQuery.sort &&
+      filtersKey === initialFiltersKey;
 
     if (matchesInitial) return;
 
@@ -244,7 +320,7 @@ export function ModelsTable({
       setLoading(true);
       setError(null);
       try {
-        const qs = new URLSearchParams();
+        const qs = serializeModelFilters(filters);
         qs.set("page", String(page));
         qs.set("limit", String(limit));
         qs.set("sort", sort);
@@ -272,7 +348,15 @@ export function ModelsTable({
     return () => {
       cancelled = true;
     };
-  }, [page, limit, sort, initialQuery]);
+  }, [
+    page,
+    limit,
+    sort,
+    filters,
+    filtersKey,
+    initialFiltersKey,
+    initialQuery,
+  ]);
 
   const replaceQuery = useCallback(
     (patch: Record<string, string | null>) => {
@@ -497,6 +581,15 @@ export function ModelsTable({
               setViewMode(v);
               if (v === "compact") setDensity("compact");
               else if (v === "table") setDensity("standard");
+              replaceQuery({
+                view: v,
+                density:
+                  v === "compact"
+                    ? "compact"
+                    : v === "cards"
+                      ? "comfortable"
+                      : "standard",
+              });
             }}
             options={[
               { value: "table", label: "Table" },
@@ -587,6 +680,8 @@ export function ModelsTable({
           </Popover>
         </div>
       </div>
+
+      <FilterBar />
 
       {viewMode === "cards" ? (
         <EmptyState

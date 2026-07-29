@@ -766,3 +766,52 @@ git checkout -- apps/web/src packages/ui/src/data-table.tsx
 ```
 
 Evidence: `$RUN_DIR/models-table.txt` — `RESULT=PASS`.
+
+### models-filters (2026-07-29T01:15Z) — RESULT=PASS
+
+#### Built
+- `apps/web/src/lib/use-model-filters.ts` — URL-backed filter state (parse/serialize/chips/clear)
+  covering six brief §7.3 groups; used by every Models view mode.
+- `apps/web/src/components/models/filter-bar.tsx` — sticky bar: six group dropdowns,
+  removable `FilterChip`s, `Clear all` (immediate apply, no builder).
+- `apps/web/src/components/models/saved-views.tsx` — top-bar selector with save / rename /
+  update / delete; applying a view sets filters, sort, columns, view mode, density.
+- Wired into `models-table.tsx`, `models/page.tsx` (SSR passes filters), `shell/top-bar.tsx`.
+
+#### Filter groups
+1. Identity — accessType, modelType, family (+ free-form URL keys for creator/provider/plan)
+2. Status — workflowStatus, isFavourite, archived
+3. Capabilities — vision, reasoning, toolUse, agent, multimodal, codingSpecialist, longContext
+4. Ratings — tested, confidence, skill, personal/skill score mins
+5. Cost & Quota — free, subscription, api, openWeights, local, unlimited, request/token limited, pricing known/missing
+6. Data maintenance — needsReview, missingRating/Cost/Quota, recentlyVerified, outdated
+
+#### Verified
+- Seeded saved views in DB: 15 → `DEFAULT_VIEWS=15`
+- Unit tests for use-model-filters: each group ser/de, single-chip remove, Clear all empties filters
+- Token grep on changed paths empty → `NO_RAW_HEX=PASS`
+- `pnpm lint` / `typecheck` / `test:unit` PASS
+- Screenshot `02-models-table-drawer.png` viewed (vision); mockup is contract
+
+#### Notes / deferred
+- Screenshot/mockup list Access Provider / Status / Access Type / Skill / Tags / Price / Quota
+  as seven flat dropdowns; phase requires six §7.3 groups — implemented groups. Visual language
+  (dropdowns + chips + Clear all) matches mockup. Discrepancy recorded for review.
+- Tags filter not in list API query schema; not added here.
+- Legacy `models-filters.tsx` left untouched (unused by new page).
+
+#### Files
+- `apps/web/src/lib/use-model-filters.ts` (+ test)
+- `apps/web/src/components/models/filter-bar.tsx`
+- `apps/web/src/components/models/saved-views.tsx`
+- `apps/web/src/components/models/models-table.tsx`
+- `apps/web/src/app/models/page.tsx`
+- `apps/web/src/components/shell/top-bar.tsx`
+
+#### Rollback (this phase only)
+```
+git checkout -- apps/web/src
+```
+
+Evidence: `$RUN_DIR/models-filters.txt` — `RESULT=PASS`.
+
