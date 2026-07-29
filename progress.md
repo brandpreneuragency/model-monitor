@@ -683,3 +683,43 @@ rm -rf apps/web/src/app/api/v1/overview
 ```
 
 Evidence: `$RUN_DIR/api-overview.txt` — `RESULT=PASS`.
+
+### shell (2026-07-29T00:49Z) — RESULT=PASS
+
+#### Built
+- Application shell under `apps/web/src/components/shell/`:
+  `app-shell.tsx`, `sidebar.tsx`, `top-bar.tsx`, `command-palette.tsx`,
+  `drawer-host.tsx`, `compare-tray.tsx`, `density-provider.tsx`, `index.ts`.
+- Deleted legacy `apps/web/src/components/app-shell.tsx`.
+- Root layout wires shell, imports `@model-monitor/ui/tokens.css`, self-hosts Geist
+  (`geist` package) with Inter (`next/font/google`) fallback.
+- Route stubs: `/`, `/models`, `/rankings`, `/providers` — title + EmptyState each.
+- Login remains bare (no chrome). Primary nav is only the four destinations.
+
+#### Verified
+- Token grep on `shell/`: no raw hex / gradients / box-shadow → `NO_RAW_HEX=PASS`.
+- `pnpm lint`, `typecheck`, `test:unit` all PASS.
+- Screenshot `01-overview-and-models.png` viewed (vision); mockup is contract.
+
+#### Notes / deferred
+- Saved-view selector and filter button are chrome placeholders for later phases.
+- Theme control present but disabled (dark-only).
+- Compare tray navigates to `/models/compare?ids=` (compare phase will fill).
+- Nested legacy model routes (`/models/new`, `/models/[id]`, …) still present under the
+  stub list page; later phases replace models UI end-to-end.
+- e2e mobile-nav testids removed with old shell (mobile out of redesign scope).
+
+#### Files
+- `apps/web/src/components/shell/**` (new)
+- `apps/web/src/app/layout.tsx`, `page.tsx`, `models/page.tsx`, `rankings/page.tsx`,
+  `providers/page.tsx`
+- `apps/web/package.json` + lockfile (`geist`)
+- deleted `apps/web/src/components/app-shell.tsx`
+
+#### Rollback (this phase only)
+```
+git checkout -- apps/web/src apps/web/package.json pnpm-lock.yaml
+```
+
+Evidence: `$RUN_DIR/shell.txt` — `RESULT=PASS`.
+

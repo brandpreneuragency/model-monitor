@@ -1,8 +1,8 @@
 import { EmptyState } from "@model-monitor/ui";
 
-export default function OverviewPage() {
+export default function RankingsPage() {
   return (
-    <div data-testid="overview-page">
+    <div data-testid="rankings-page">
       <h1
         style={{
           margin: 0,
@@ -13,7 +13,7 @@ export default function OverviewPage() {
           fontFamily: "var(--font-sans)",
         }}
       >
-        Overview
+        Rankings
       </h1>
       <p
         style={{
@@ -23,11 +23,11 @@ export default function OverviewPage() {
           fontFamily: "var(--font-sans)",
         }}
       >
-        Your AI model directory at a glance
+        Personal and external skill leaderboards
       </p>
       <EmptyState
-        title="Overview coming next"
-        message="Dashboard widgets will appear here in a later phase."
+        title="Rankings coming next"
+        message="Leaderboards and ranking profiles will appear here in a later phase."
       />
     </div>
   );
